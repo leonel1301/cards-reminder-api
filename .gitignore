@@ -1,1 +1,46 @@
-.env*
+# Binarios compilados
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Archivos de compilación
+/bin/
+/dist/
+/build/
+
+# Archivos de pruebas
+*.test
+*.out
+coverage.out
+
+# Dependencias vendorizadas (si no quieres subirlas)
+vendor/
+
+# Variables de entorno
+.env
+.env.*
+
+# Logs
+*.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Configuración de IDEs
+.vscode/
+.idea/
+
+# Archivos temporales
+tmp/
+temp/
+
+# Air (hot reload)
+.air.toml
+
+# Archivos de secretos
+secrets.json
+credentials.json
+firebase-service-account.json
