@@ -8,17 +8,30 @@ import (
 )
 
 type UserService struct {
-	repo *repository.UserRepository
+	userRepo  *repository.UserRepository
+	ownerRepo *repository.OwnerRepository
 }
 
-func NewUserService(repo *repository.UserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(userRepo *repository.UserRepository, ownerRepo *repository.OwnerRepository) *UserService {
+	return &UserService{
+		userRepo:  userRepo,
+		ownerRepo: ownerRepo,
+	}
 }
 
 func (s *UserService) GetOrCreate(ctx context.Context, firebaseUID string, email, displayName *string) (*domain.User, error) {
-	return s.repo.Upsert(ctx, firebaseUID, email, displayName)
+	user, err := s.userRepo.Upsert(ctx, firebaseUID, email, displayName)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.ownerRepo.EnsureSelfOwner(ctx, user.ID, displayName); err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (s *UserService) GetByFirebaseUID(ctx context.Context, firebaseUID string) (*domain.User, error) {
-	return s.repo.GetByFirebaseUID(ctx, firebaseUID)
+	return s.userRepo.GetByFirebaseUID(ctx, firebaseUID)
 }
