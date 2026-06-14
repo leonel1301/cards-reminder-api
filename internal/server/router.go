@@ -11,6 +11,7 @@ type Router struct {
 	cardHandler       *handler.CardHandler
 	cardStatusHandler *handler.CardStatusHandler
 	ownerHandler      *handler.OwnerHandler
+	deviceHandler     *handler.DeviceHandler
 	auth              *middleware.AuthMiddleware
 }
 
@@ -19,6 +20,7 @@ func NewRouter(
 	cardHandler *handler.CardHandler,
 	cardStatusHandler *handler.CardStatusHandler,
 	ownerHandler *handler.OwnerHandler,
+	deviceHandler *handler.DeviceHandler,
 	auth *middleware.AuthMiddleware,
 ) *Router {
 	return &Router{
@@ -26,6 +28,7 @@ func NewRouter(
 		cardHandler:       cardHandler,
 		cardStatusHandler: cardStatusHandler,
 		ownerHandler:      ownerHandler,
+		deviceHandler:     deviceHandler,
 		auth:              auth,
 	}
 }
@@ -46,6 +49,9 @@ func (r *Router) Setup() *gin.Engine {
 		authGroup.GET("/owners/:id", r.ownerHandler.Get)
 		authGroup.PATCH("/owners/:id", r.ownerHandler.Update)
 		authGroup.DELETE("/owners/:id", r.ownerHandler.Delete)
+
+		authGroup.PUT("/devices", r.deviceHandler.Register)
+		authGroup.DELETE("/devices", r.deviceHandler.Unregister)
 
 		authGroup.GET("/dashboard", r.cardStatusHandler.GetDashboard)
 

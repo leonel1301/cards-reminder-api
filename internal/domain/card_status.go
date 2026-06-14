@@ -28,6 +28,7 @@ type CardStatusInfo struct {
 	CycleEnd             time.Time       `json:"cycle_end"`
 	PaymentDueDate       time.Time       `json:"payment_due_date"`
 	DaysUntilPayment     int             `json:"days_until_payment"`
+	OptimalPurchaseDay   int             `json:"optimal_purchase_day"`
 	IsOptimalPurchaseDay bool            `json:"is_optimal_purchase_day"`
 	IsPaidThisCycle      bool            `json:"is_paid_this_cycle"`
 }

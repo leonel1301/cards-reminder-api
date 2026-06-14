@@ -45,14 +45,17 @@ func main() {
 	cardService := service.NewCardService(cardRepo, ownerRepo)
 	ownerService := service.NewOwnerService(ownerRepo)
 	paymentRepo := repository.NewPaymentRepository(pool)
-	cardStatusService := service.NewCardStatusService(cardRepo, paymentRepo)
+	cardStatusService := service.NewCardStatusService(cardRepo, paymentRepo, ownerRepo)
 	authMiddleware := middleware.NewAuthMiddleware(authClient, userService)
 	authHandler := handler.NewAuthHandler()
 	cardHandler := handler.NewCardHandler(cardService)
 	cardStatusHandler := handler.NewCardStatusHandler(cardStatusService)
 	ownerHandler := handler.NewOwnerHandler(ownerService)
+	deviceTokenRepo := repository.NewDeviceTokenRepository(pool)
+	deviceTokenService := service.NewDeviceTokenService(deviceTokenRepo)
+	deviceHandler := handler.NewDeviceHandler(deviceTokenService)
 
-	router := server.NewRouter(authHandler, cardHandler, cardStatusHandler, ownerHandler, authMiddleware).Setup()
+	router := server.NewRouter(authHandler, cardHandler, cardStatusHandler, ownerHandler, deviceHandler, authMiddleware).Setup()
 
 	go func() {
 		if err := router.Run(":" + cfg.Port); err != nil {

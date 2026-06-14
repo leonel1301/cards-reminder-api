@@ -12,24 +12,31 @@ import (
 type CardStatusService struct {
 	cardRepo    *repository.CardRepository
 	paymentRepo *repository.PaymentRepository
+	ownerRepo   *repository.OwnerRepository
 	now         func() time.Time
 }
 
-func NewCardStatusService(cardRepo *repository.CardRepository, paymentRepo *repository.PaymentRepository) *CardStatusService {
+func NewCardStatusService(
+	cardRepo *repository.CardRepository,
+	paymentRepo *repository.PaymentRepository,
+	ownerRepo *repository.OwnerRepository,
+) *CardStatusService {
 	return &CardStatusService{
 		cardRepo:    cardRepo,
 		paymentRepo: paymentRepo,
+		ownerRepo:   ownerRepo,
 		now:         time.Now,
 	}
 }
 
-func (s *CardStatusService) GetStatus(ctx context.Context, userID, cardID uuid.UUID) (*domain.CardStatusResponse, error) {
+func (s *CardStatusService) GetStatus(ctx context.Context, userID, cardID uuid.UUID, timezone string) (*domain.CardStatusResponse, error) {
 	card, err := s.cardRepo.GetByIDAndUserID(ctx, cardID, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	statusInfo, optimalDays, err := s.buildStatusForCard(ctx, *card, s.now())
+	loc := ResolveLocation(timezone)
+	statusInfo, optimalDays, err := s.buildStatusForCard(ctx, *card, s.now(), loc)
 	if err != nil {
 		return nil, err
 	}
@@ -41,14 +48,18 @@ func (s *CardStatusService) GetStatus(ctx context.Context, userID, cardID uuid.U
 	}, nil
 }
 
-func (s *CardStatusService) GetOptimalPurchaseDays(ctx context.Context, userID, cardID uuid.UUID) (*domain.OptimalPurchaseDaysResponse, error) {
+func (s *CardStatusService) GetOptimalPurchaseDays(ctx context.Context, userID, cardID uuid.UUID, timezone string) (*domain.OptimalPurchaseDaysResponse, error) {
 	card, err := s.cardRepo.GetByIDAndUserID(ctx, cardID, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	cycle := ComputeBillingCycle(s.now(), card.BillingCycleDay, card.PaymentDueDay)
-	optimalDays := OptimalPurchaseDays(cycle, defaultOptimalWindowDays)
+	loc := ResolveLocation(timezone)
+	now := s.now()
+	cycle := ComputeBillingCycle(now, card.BillingCycleDay, card.PaymentDueDay, loc)
+	salaryDay := s.ownerSalaryDay(ctx, card.OwnerID, card.UserID)
+	optimalDay := ComputeOptimalPurchaseDay(card.BillingCycleDay, salaryDay)
+	optimalDays := OptimalPurchaseDaysInMonth(now, optimalDay, defaultOptimalWindowDays, loc)
 
 	return &domain.OptimalPurchaseDaysResponse{
 		Card: *card,
@@ -61,12 +72,13 @@ func (s *CardStatusService) GetOptimalPurchaseDays(ctx context.Context, userID, 
 	}, nil
 }
 
-func (s *CardStatusService) GetDashboard(ctx context.Context, userID uuid.UUID) (*domain.DashboardResponse, error) {
+func (s *CardStatusService) GetDashboard(ctx context.Context, userID uuid.UUID, timezone string) (*domain.DashboardResponse, error) {
 	cards, err := s.cardRepo.ListByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
+	loc := ResolveLocation(timezone)
 	now := s.now()
 	items := make([]domain.DashboardItem, 0)
 	summary := domain.DashboardSummary{}
@@ -76,7 +88,7 @@ func (s *CardStatusService) GetDashboard(ctx context.Context, userID uuid.UUID) 
 			continue
 		}
 
-		statusInfo, _, err := s.buildStatusForCard(ctx, card, now)
+		statusInfo, _, err := s.buildStatusForCard(ctx, card, now, loc)
 		if err != nil {
 			return nil, err
 		}
@@ -111,33 +123,35 @@ func (s *CardStatusService) GetDashboard(ctx context.Context, userID uuid.UUID) 
 	}, nil
 }
 
-func (s *CardStatusService) MarkPaid(ctx context.Context, userID, cardID uuid.UUID, notes *string) (*domain.CardStatusResponse, error) {
+func (s *CardStatusService) MarkPaid(ctx context.Context, userID, cardID uuid.UUID, notes *string, timezone string) (*domain.CardStatusResponse, error) {
 	card, err := s.cardRepo.GetByIDAndUserID(ctx, cardID, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	cycle := ComputeBillingCycle(s.now(), card.BillingCycleDay, card.PaymentDueDay)
+	loc := ResolveLocation(timezone)
+	cycle := ComputeBillingCycle(s.now(), card.BillingCycleDay, card.PaymentDueDay, loc)
 	if err := s.paymentRepo.Create(ctx, cardID, cycle.End, notes); err != nil {
 		paid, checkErr := s.paymentRepo.HasPaymentForCycle(ctx, cardID, cycle.End)
 		if checkErr == nil && paid {
-			return s.GetStatus(ctx, userID, cardID)
+			return s.GetStatus(ctx, userID, cardID, timezone)
 		}
 		return nil, err
 	}
 
-	return s.GetStatus(ctx, userID, cardID)
+	return s.GetStatus(ctx, userID, cardID, timezone)
 }
 
-func (s *CardStatusService) GetCurrentCycle(ctx context.Context, userID, cardID uuid.UUID) (*domain.CurrentCycleResponse, error) {
+func (s *CardStatusService) GetCurrentCycle(ctx context.Context, userID, cardID uuid.UUID, timezone string) (*domain.CurrentCycleResponse, error) {
 	card, err := s.cardRepo.GetByIDAndUserID(ctx, cardID, userID)
 	if err != nil {
 		return nil, err
 	}
 
+	loc := ResolveLocation(timezone)
 	now := s.now()
-	cycle := ComputeBillingCycle(now, card.BillingCycleDay, card.PaymentDueDay)
-	statusInfo, _, err := s.buildStatusForCard(ctx, *card, now)
+	cycle := ComputeBillingCycle(now, card.BillingCycleDay, card.PaymentDueDay, loc)
+	statusInfo, _, err := s.buildStatusForCard(ctx, *card, now, loc)
 	if err != nil {
 		return nil, err
 	}
@@ -184,14 +198,23 @@ func (s *CardStatusService) ListPayments(ctx context.Context, userID, cardID uui
 	}, nil
 }
 
-func (s *CardStatusService) buildStatusForCard(ctx context.Context, card domain.Card, ref time.Time) (domain.CardStatusInfo, []time.Time, error) {
-	cycle := ComputeBillingCycle(ref, card.BillingCycleDay, card.PaymentDueDay)
+func (s *CardStatusService) buildStatusForCard(ctx context.Context, card domain.Card, ref time.Time, loc *time.Location) (domain.CardStatusInfo, []time.Time, error) {
+	cycle := ComputeBillingCycle(ref, card.BillingCycleDay, card.PaymentDueDay, loc)
 	paid, err := s.paymentRepo.HasPaymentForCycle(ctx, card.ID, cycle.End)
 	if err != nil {
 		return domain.CardStatusInfo{}, nil, err
 	}
 
-	statusInfo := BuildCardStatusInfo(ref, cycle, paid)
-	optimalDays := OptimalPurchaseDays(cycle, defaultOptimalWindowDays)
+	salaryDay := s.ownerSalaryDay(ctx, card.OwnerID, card.UserID)
+	statusInfo := BuildCardStatusInfo(ref, cycle, card.PaymentDueDay, card.BillingCycleDay, salaryDay, paid, loc)
+	optimalDays := OptimalPurchaseDaysInMonth(ref, statusInfo.OptimalPurchaseDay, defaultOptimalWindowDays, loc)
 	return statusInfo, optimalDays, nil
+}
+
+func (s *CardStatusService) ownerSalaryDay(ctx context.Context, ownerID, userID uuid.UUID) *int {
+	owner, err := s.ownerRepo.GetByIDAndUserID(ctx, ownerID, userID)
+	if err != nil {
+		return nil
+	}
+	return owner.SalaryDay
 }
