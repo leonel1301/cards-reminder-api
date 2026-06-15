@@ -33,7 +33,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	authClient, err := auth.NewFirebaseAuthClient(ctx, cfg.FirebaseCredentialsPath)
+	firebaseApp, err := auth.NewFirebase(ctx, cfg.FirebaseCredentialsPath)
 	if err != nil {
 		log.Fatalf("firebase: %v", err)
 	}
@@ -46,7 +46,7 @@ func main() {
 	ownerService := service.NewOwnerService(ownerRepo)
 	paymentRepo := repository.NewPaymentRepository(pool)
 	cardStatusService := service.NewCardStatusService(cardRepo, paymentRepo, ownerRepo)
-	authMiddleware := middleware.NewAuthMiddleware(authClient, userService)
+	authMiddleware := middleware.NewAuthMiddleware(firebaseApp.Auth, userService)
 	authHandler := handler.NewAuthHandler()
 	cardHandler := handler.NewCardHandler(cardService)
 	cardStatusHandler := handler.NewCardStatusHandler(cardStatusService)
@@ -54,8 +54,18 @@ func main() {
 	deviceTokenRepo := repository.NewDeviceTokenRepository(pool)
 	deviceTokenService := service.NewDeviceTokenService(deviceTokenRepo)
 	deviceHandler := handler.NewDeviceHandler(deviceTokenService)
+	notificationService := service.NewNotificationService(deviceTokenRepo, firebaseApp.Messaging)
+	notificationHandler := handler.NewNotificationHandler(notificationService)
 
-	router := server.NewRouter(authHandler, cardHandler, cardStatusHandler, ownerHandler, deviceHandler, authMiddleware).Setup()
+	router := server.NewRouter(
+		authHandler,
+		cardHandler,
+		cardStatusHandler,
+		ownerHandler,
+		deviceHandler,
+		notificationHandler,
+		authMiddleware,
+	).Setup()
 
 	go func() {
 		if err := router.Run(":" + cfg.Port); err != nil {
