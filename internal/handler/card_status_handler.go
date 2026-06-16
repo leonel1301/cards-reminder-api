@@ -3,7 +3,6 @@ package handler
 import (
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -13,11 +12,15 @@ import (
 )
 
 type CardStatusHandler struct {
-	cardStatusService *service.CardStatusService
+	cardStatusService  *service.CardStatusService
+	deviceTokenService *service.DeviceTokenService
 }
 
-func NewCardStatusHandler(cardStatusService *service.CardStatusService) *CardStatusHandler {
-	return &CardStatusHandler{cardStatusService: cardStatusService}
+func NewCardStatusHandler(cardStatusService *service.CardStatusService, deviceTokenService *service.DeviceTokenService) *CardStatusHandler {
+	return &CardStatusHandler{
+		cardStatusService:  cardStatusService,
+		deviceTokenService: deviceTokenService,
+	}
 }
 
 type markPaidRequest struct {
@@ -37,7 +40,12 @@ func (h *CardStatusHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
-	response, err := h.cardStatusService.GetStatus(c.Request.Context(), user.ID, cardID, requestTimezone(c))
+	timezone, ok := h.userTimezone(c, user.ID)
+	if !ok {
+		return
+	}
+
+	response, err := h.cardStatusService.GetStatus(c.Request.Context(), user.ID, cardID, timezone)
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -59,7 +67,12 @@ func (h *CardStatusHandler) GetOptimalPurchaseDays(c *gin.Context) {
 		return
 	}
 
-	response, err := h.cardStatusService.GetOptimalPurchaseDays(c.Request.Context(), user.ID, cardID, requestTimezone(c))
+	timezone, ok := h.userTimezone(c, user.ID)
+	if !ok {
+		return
+	}
+
+	response, err := h.cardStatusService.GetOptimalPurchaseDays(c.Request.Context(), user.ID, cardID, timezone)
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -75,7 +88,12 @@ func (h *CardStatusHandler) GetDashboard(c *gin.Context) {
 		return
 	}
 
-	response, err := h.cardStatusService.GetDashboard(c.Request.Context(), user.ID, requestTimezone(c))
+	timezone, ok := h.userTimezone(c, user.ID)
+	if !ok {
+		return
+	}
+
+	response, err := h.cardStatusService.GetDashboard(c.Request.Context(), user.ID, timezone)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build dashboard"})
 		return
@@ -97,7 +115,12 @@ func (h *CardStatusHandler) GetCurrentCycle(c *gin.Context) {
 		return
 	}
 
-	response, err := h.cardStatusService.GetCurrentCycle(c.Request.Context(), user.ID, cardID, requestTimezone(c))
+	timezone, ok := h.userTimezone(c, user.ID)
+	if !ok {
+		return
+	}
+
+	response, err := h.cardStatusService.GetCurrentCycle(c.Request.Context(), user.ID, cardID, timezone)
 	if err != nil {
 		h.handleError(c, err)
 		return
@@ -147,13 +170,27 @@ func (h *CardStatusHandler) MarkPaid(c *gin.Context) {
 		return
 	}
 
-	response, err := h.cardStatusService.MarkPaid(c.Request.Context(), user.ID, cardID, req.Notes, requestTimezone(c))
+	timezone, ok := h.userTimezone(c, user.ID)
+	if !ok {
+		return
+	}
+
+	response, err := h.cardStatusService.MarkPaid(c.Request.Context(), user.ID, cardID, req.Notes, timezone)
 	if err != nil {
 		h.handleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *CardStatusHandler) userTimezone(c *gin.Context, userID uuid.UUID) (string, bool) {
+	timezone, err := h.deviceTokenService.GetTimezoneForUser(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve timezone"})
+		return "", false
+	}
+	return timezone, true
 }
 
 func (h *CardStatusHandler) handleError(c *gin.Context, err error) {
@@ -163,8 +200,4 @@ func (h *CardStatusHandler) handleError(c *gin.Context, err error) {
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 	}
-}
-
-func requestTimezone(c *gin.Context) string {
-	return strings.TrimSpace(c.GetHeader("X-Timezone"))
 }

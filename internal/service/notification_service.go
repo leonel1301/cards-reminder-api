@@ -64,6 +64,30 @@ func (s *NotificationService) SendToUser(ctx context.Context, userID uuid.UUID, 
 	return result, nil
 }
 
+func (s *NotificationService) SendToDevice(ctx context.Context, fcmToken string, notification domain.PushNotification) error {
+	message := buildMessage(fcmToken, notification)
+	response, err := s.messaging.Send(ctx, message)
+	if err != nil {
+		return fmt.Errorf("send push notification: %w", err)
+	}
+	if response == "" {
+		return fmt.Errorf("empty messaging response")
+	}
+	return nil
+}
+
+func (s *NotificationService) SendToDeviceWithCleanup(ctx context.Context, fcmToken string, notification domain.PushNotification) error {
+	message := buildMessage(fcmToken, notification)
+	_, err := s.messaging.Send(ctx, message)
+	if err != nil {
+		if messaging.IsRegistrationTokenNotRegistered(err) {
+			_ = s.deviceRepo.DeleteByFCMToken(ctx, fcmToken)
+		}
+		return fmt.Errorf("send push notification: %w", err)
+	}
+	return nil
+}
+
 func buildMessage(token string, notification domain.PushNotification) *messaging.Message {
 	data := notification.Data
 	if data == nil {

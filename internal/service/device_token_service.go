@@ -31,7 +31,17 @@ func (s *DeviceTokenService) Register(ctx context.Context, userID uuid.UUID, inp
 		input.Language = "es"
 	}
 
+	input.Timezone = NormalizeTimezone(input.Timezone)
+
 	return s.repo.Upsert(ctx, userID, input)
+}
+
+func (s *DeviceTokenService) GetTimezoneForUser(ctx context.Context, userID uuid.UUID) (string, error) {
+	timezone, err := s.repo.GetLatestTimezoneByUserID(ctx, userID)
+	if err != nil {
+		return "", err
+	}
+	return ResolveTimezone(timezone, DefaultTimezone), nil
 }
 
 func (s *DeviceTokenService) Unregister(ctx context.Context, userID uuid.UUID, fcmToken string) error {

@@ -12,6 +12,7 @@ type DeviceToken struct {
 	FCMToken  string    `json:"fcm_token"`
 	Platform  string    `json:"platform"`
 	Language  string    `json:"language"`
+	Timezone  string    `json:"timezone"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -20,4 +21,5 @@ type RegisterDeviceInput struct {
 	FCMToken string
 	Platform string
 	Language string
+	Timezone string
 }

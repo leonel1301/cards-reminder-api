@@ -24,6 +24,7 @@ type registerDeviceRequest struct {
 	FCMToken string `json:"fcm_token" binding:"required"`
 	Platform string `json:"platform"`
 	Language string `json:"language"`
+	Timezone string `json:"timezone"`
 }
 
 type unregisterDeviceRequest struct {
@@ -47,6 +48,7 @@ func (h *DeviceHandler) Register(c *gin.Context) {
 		FCMToken: req.FCMToken,
 		Platform: req.Platform,
 		Language: req.Language,
+		Timezone: req.Timezone,
 	})
 	if err != nil {
 		h.handleError(c, err)
