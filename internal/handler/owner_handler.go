@@ -155,10 +155,10 @@ func (h *OwnerHandler) handleError(c *gin.Context, err error) {
 	case errors.As(err, &validationErr):
 		c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Error()})
 	case errors.Is(err, service.ErrOwnerHasCards):
-		c.JSON(http.StatusConflict, gin.H{"error": "owner has assigned cards"})
+		c.JSON(http.StatusConflict, gin.H{"error": "Owner has assigned cards"})
 	case errors.Is(err, repository.ErrNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": "owner not found"})
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 	}
 }
