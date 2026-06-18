@@ -10,6 +10,7 @@ import (
 type ReminderKind string
 
 const (
+	ReminderKindOverdue    ReminderKind = "overdue"
 	ReminderKindUrgent     ReminderKind = "urgent"
 	ReminderKindDueSoon    ReminderKind = "due_soon"
 	ReminderKindOptimalDay ReminderKind = "optimal_day"
@@ -25,6 +26,8 @@ func BuildReminderNotification(kind ReminderKind, cards []CardReminder, language
 	lang := normalizeLanguage(language)
 
 	switch kind {
+	case ReminderKindOverdue:
+		return buildOverdue(lang, cards)
 	case ReminderKindUrgent:
 		return buildUrgent(lang, cards)
 	case ReminderKindDueSoon:
@@ -33,6 +36,48 @@ func BuildReminderNotification(kind ReminderKind, cards []CardReminder, language
 		return buildOptimalDay(lang, cards)
 	default:
 		return domain.PushNotification{Title: "Cards Reminder", Body: ""}
+	}
+}
+
+func buildOverdue(lang string, cards []CardReminder) domain.PushNotification {
+	if len(cards) == 1 {
+		card := cards[0]
+		days := card.Status.DaysOverdue
+		label := cardLabel(card, lang)
+		switch lang {
+		case "en":
+			return domain.PushNotification{
+				Title: "Overdue payment",
+				Body:  fmt.Sprintf("%s is %d day(s) overdue.", label, days),
+				Data:  reminderData(ReminderKindOverdue, &card),
+			}
+		default:
+			return domain.PushNotification{
+				Title: "Pago vencido",
+				Body:  fmt.Sprintf("%s está vencida hace %d día(s).", label, days),
+				Data:  reminderData(ReminderKindOverdue, &card),
+			}
+		}
+	}
+
+	names := make([]string, 0, len(cards))
+	for _, item := range cards {
+		names = append(names, cardLabel(item, lang))
+	}
+
+	switch lang {
+	case "en":
+		return domain.PushNotification{
+			Title: "Overdue payments",
+			Body:  fmt.Sprintf("You have overdue cards: %s.", strings.Join(names, ", ")),
+			Data:  reminderData(ReminderKindOverdue, nil),
+		}
+	default:
+		return domain.PushNotification{
+			Title: "Pagos vencidos",
+			Body:  fmt.Sprintf("Tienes tarjetas vencidas: %s.", strings.Join(names, ", ")),
+			Data:  reminderData(ReminderKindOverdue, nil),
+		}
 	}
 }
 

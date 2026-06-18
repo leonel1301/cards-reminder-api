@@ -83,6 +83,36 @@ func TestBuildReminderNotification_includesOwnerName(t *testing.T) {
 	}
 }
 
+func TestBuildReminderNotification_overdueIncludesOwner(t *testing.T) {
+	ownerID := uuid.New()
+	card := domain.Card{
+		ID:             uuid.New(),
+		OwnerID:        ownerID,
+		Name:           "Visa",
+		LastFourDigits: "4532",
+	}
+	owner := domain.Owner{
+		ID:     ownerID,
+		Name:   "María",
+		IsSelf: false,
+	}
+
+	notification := BuildReminderNotification(ReminderKindOverdue, []CardReminder{
+		{
+			Card:   card,
+			Status: domain.CardStatusInfo{DaysOverdue: 5},
+			Owner:  &owner,
+		},
+	}, "es")
+
+	if !strings.Contains(notification.Body, "Visa de María") {
+		t.Fatalf("expected owner in overdue body, got: %s", notification.Body)
+	}
+	if notification.Data["kind"] != "overdue" {
+		t.Fatalf("unexpected kind: %s", notification.Data["kind"])
+	}
+}
+
 func TestBuildReminderNotification_selfOwnerOmitsOwnerName(t *testing.T) {
 	ownerID := uuid.New()
 	card := domain.Card{

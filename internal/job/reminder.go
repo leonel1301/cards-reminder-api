@@ -22,6 +22,11 @@ type ReminderJob struct {
 	now                 func() time.Time
 }
 
+type reminderBatch struct {
+	kind  i18n.ReminderKind
+	cards []i18n.CardReminder
+}
+
 func NewReminderJob(
 	deviceRepo *repository.DeviceTokenRepository,
 	ownerRepo *repository.OwnerRepository,
@@ -89,48 +94,51 @@ func (j *ReminderJob) Run(ctx context.Context) (*domain.ReminderJobResult, error
 			ownersCache[device.UserID] = ownersByID
 		}
 
-		kind, cards := pickReminderCards(dashboard.Cards, ownersByID)
-		if kind == "" || len(cards) == 0 {
+		batches := pickReminderBatches(dashboard.Cards, ownersByID)
+		if len(batches) == 0 {
 			result.UsersSkipped++
 			continue
 		}
 
 		result.DevicesNotified++
-		notification := i18n.BuildReminderNotification(kind, cards, device.Language)
+		for _, batch := range batches {
+			notification := i18n.BuildReminderNotification(batch.kind, batch.cards, device.Language)
 
-		if err := j.notificationSvc.SendToDeviceWithCleanup(ctx, device.FCMToken, notification); err != nil {
-			log.Printf("reminder send failed user=%s device=%s: %v", device.UserID, device.ID, err)
-			result.SendFailures++
-			continue
+			if err := j.notificationSvc.SendToDeviceWithCleanup(ctx, device.FCMToken, notification); err != nil {
+				log.Printf("reminder send failed user=%s device=%s kind=%s: %v", device.UserID, device.ID, batch.kind, err)
+				result.SendFailures++
+				continue
+			}
+
+			result.NotificationsSent++
+			log.Printf("reminder sent user=%s device=%s kind=%s timezone=%s language=%s", device.UserID, device.ID, batch.kind, timezone, device.Language)
 		}
-
-		result.NotificationsSent++
-		log.Printf("reminder sent user=%s device=%s kind=%s timezone=%s language=%s", device.UserID, device.ID, kind, timezone, device.Language)
 	}
 
 	return result, nil
 }
 
-// pickReminderCards selects which cards to notify and the highest-priority kind.
-// Priority: urgent > due_soon > optimal_day.
-// paid and on_track cards are never included.
-func pickReminderCards(items []domain.DashboardItem, ownersByID map[uuid.UUID]domain.Owner) (i18n.ReminderKind, []i18n.CardReminder) {
-	urgent := filterCards(items, domain.CardStatusUrgent, ownersByID)
-	if len(urgent) > 0 {
-		return i18n.ReminderKindUrgent, urgent
+// pickReminderBatches returns separate notification batches.
+// Order: overdue, urgent, due_soon, optimal_day.
+func pickReminderBatches(items []domain.DashboardItem, ownersByID map[uuid.UUID]domain.Owner) []reminderBatch {
+	batches := make([]reminderBatch, 0, 4)
+
+	if overdue := filterCards(items, domain.CardStatusOverdue, ownersByID); len(overdue) > 0 {
+		batches = append(batches, reminderBatch{kind: i18n.ReminderKindOverdue, cards: overdue})
+	}
+	if urgent := filterCards(items, domain.CardStatusUrgent, ownersByID); len(urgent) > 0 {
+		batches = append(batches, reminderBatch{kind: i18n.ReminderKindUrgent, cards: urgent})
+	}
+	if dueSoon := filterCards(items, domain.CardStatusDueSoon, ownersByID); len(dueSoon) > 0 {
+		batches = append(batches, reminderBatch{kind: i18n.ReminderKindDueSoon, cards: dueSoon})
+	}
+	if len(batches) == 0 {
+		if optimal := filterCards(items, domain.CardStatusOptimalDay, ownersByID); len(optimal) > 0 {
+			batches = append(batches, reminderBatch{kind: i18n.ReminderKindOptimalDay, cards: optimal})
+		}
 	}
 
-	dueSoon := filterCards(items, domain.CardStatusDueSoon, ownersByID)
-	if len(dueSoon) > 0 {
-		return i18n.ReminderKindDueSoon, dueSoon
-	}
-
-	optimal := filterCards(items, domain.CardStatusOptimalDay, ownersByID)
-	if len(optimal) > 0 {
-		return i18n.ReminderKindOptimalDay, optimal
-	}
-
-	return "", nil
+	return batches
 }
 
 func (j *ReminderJob) loadOwnersByID(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]domain.Owner, error) {

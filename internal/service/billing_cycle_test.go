@@ -75,8 +75,45 @@ func TestDaysUntilCurrentMonthPayment_afterDueDate(t *testing.T) {
 	ref := time.Date(2026, 6, 25, 12, 0, 0, 0, time.UTC)
 	days := DaysUntilCurrentMonthPayment(ref, 20, time.UTC)
 
-	if days != 0 {
-		t.Fatalf("got %d days, want 0 when overdue in current month", days)
+	if days != 25 {
+		t.Fatalf("got %d days, want 25 until next month payment", days)
+	}
+}
+
+func TestIsPaymentOverdue(t *testing.T) {
+	ref := time.Date(2026, 6, 17, 12, 0, 0, 0, time.UTC)
+
+	if !IsPaymentOverdue(ref, 12, false, time.UTC) {
+		t.Fatal("expected overdue when due day passed and unpaid")
+	}
+	if IsPaymentOverdue(ref, 12, true, time.UTC) {
+		t.Fatal("paid card should not be overdue")
+	}
+	if IsPaymentOverdue(ref, 18, false, time.UTC) {
+		t.Fatal("future due date should not be overdue")
+	}
+}
+
+func TestDaysOverdue(t *testing.T) {
+	ref := time.Date(2026, 6, 17, 12, 0, 0, 0, time.UTC)
+	days := DaysOverdue(ref, 12, time.UTC)
+
+	if days != 5 {
+		t.Fatalf("got %d days overdue, want 5", days)
+	}
+}
+
+func TestBuildCardStatusInfo_overdue(t *testing.T) {
+	ref := time.Date(2026, 6, 17, 12, 0, 0, 0, time.UTC)
+	cycle := ComputeBillingCycle(ref, 10, 12, time.UTC)
+
+	status := BuildCardStatusInfo(ref, cycle, 12, 10, nil, false, time.UTC)
+
+	if status.Status != domain.CardStatusOverdue {
+		t.Fatalf("got status %q, want overdue", status.Status)
+	}
+	if status.DaysOverdue != 5 {
+		t.Fatalf("got days_overdue %d, want 5", status.DaysOverdue)
 	}
 }
 
@@ -147,20 +184,22 @@ func TestDetermineCardStatus_priority(t *testing.T) {
 	tests := []struct {
 		name    string
 		paid    bool
+		overdue bool
 		days    int
 		optimal bool
 		want    string
 	}{
-		{"paid wins", true, 1, true, "paid"},
-		{"urgent", false, 2, true, "urgent"},
-		{"due soon", false, 5, true, "due_soon"},
-		{"optimal", false, 10, true, "optimal_day"},
-		{"on track", false, 10, false, "on_track"},
+		{"paid wins", true, false, 1, true, "paid"},
+		{"overdue", false, true, 1, true, "overdue"},
+		{"urgent", false, false, 2, true, "urgent"},
+		{"due soon", false, false, 5, true, "due_soon"},
+		{"optimal", false, false, 10, true, "optimal_day"},
+		{"on track", false, false, 10, false, "on_track"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := DetermineCardStatus(tt.paid, tt.days, tt.optimal)
+			got := DetermineCardStatus(tt.paid, tt.overdue, tt.days, tt.optimal)
 			if string(got) != tt.want {
 				t.Fatalf("got %q, want %q", got, tt.want)
 			}

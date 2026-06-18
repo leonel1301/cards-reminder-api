@@ -8,25 +8,28 @@ import (
 	"github.com/leonelortega/cards-reminder-api/internal/notification/i18n"
 )
 
-func TestPickReminderCards_priority(t *testing.T) {
-	card := domain.Card{ID: uuid.New(), Name: "Visa", LastFourDigits: "1234"}
+func TestPickReminderBatches_separateOverdueAndUrgent(t *testing.T) {
+	cardA := domain.Card{ID: uuid.New(), Name: "Visa", LastFourDigits: "1234"}
+	cardB := domain.Card{ID: uuid.New(), Name: "Amex", LastFourDigits: "5678"}
 
 	items := []domain.DashboardItem{
-		{Card: card, Status: domain.CardStatusInfo{Status: domain.CardStatusOptimalDay}},
-		{Card: card, Status: domain.CardStatusInfo{Status: domain.CardStatusDueSoon}},
-		{Card: card, Status: domain.CardStatusInfo{Status: domain.CardStatusUrgent}},
+		{Card: cardA, Status: domain.CardStatusInfo{Status: domain.CardStatusOverdue, DaysOverdue: 5}},
+		{Card: cardB, Status: domain.CardStatusInfo{Status: domain.CardStatusUrgent, DaysUntilPayment: 1}},
 	}
 
-	kind, cards := pickReminderCards(items, nil)
-	if kind != i18n.ReminderKindUrgent {
-		t.Fatalf("got kind %q, want urgent", kind)
+	batches := pickReminderBatches(items, nil)
+	if len(batches) != 2 {
+		t.Fatalf("got %d batches, want 2", len(batches))
 	}
-	if len(cards) != 1 {
-		t.Fatalf("got %d urgent cards, want 1", len(cards))
+	if batches[0].kind != i18n.ReminderKindOverdue || len(batches[0].cards) != 1 {
+		t.Fatalf("expected first batch overdue with 1 card, got %+v", batches[0])
+	}
+	if batches[1].kind != i18n.ReminderKindUrgent || len(batches[1].cards) != 1 {
+		t.Fatalf("expected second batch urgent with 1 card, got %+v", batches[1])
 	}
 }
 
-func TestPickReminderCards_skipsPaidAndOnTrack(t *testing.T) {
+func TestPickReminderBatches_skipsPaidAndOnTrack(t *testing.T) {
 	card := domain.Card{ID: uuid.New(), Name: "Visa", LastFourDigits: "1234"}
 
 	items := []domain.DashboardItem{
@@ -34,8 +37,8 @@ func TestPickReminderCards_skipsPaidAndOnTrack(t *testing.T) {
 		{Card: card, Status: domain.CardStatusInfo{Status: domain.CardStatusOnTrack}},
 	}
 
-	kind, cards := pickReminderCards(items, nil)
-	if kind != "" || cards != nil {
-		t.Fatalf("expected no reminders, got kind=%q cards=%v", kind, cards)
+	batches := pickReminderBatches(items, nil)
+	if len(batches) != 0 {
+		t.Fatalf("expected no reminders, got %v", batches)
 	}
 }

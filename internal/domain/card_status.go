@@ -10,6 +10,7 @@ type CardStatusValue string
 
 const (
 	CardStatusPaid       CardStatusValue = "paid"
+	CardStatusOverdue    CardStatusValue = "overdue"
 	CardStatusUrgent     CardStatusValue = "urgent"
 	CardStatusDueSoon    CardStatusValue = "due_soon"
 	CardStatusOptimalDay CardStatusValue = "optimal_day"
@@ -28,6 +29,7 @@ type CardStatusInfo struct {
 	CycleEnd             time.Time       `json:"cycle_end"`
 	PaymentDueDate       time.Time       `json:"payment_due_date"`
 	DaysUntilPayment     int             `json:"days_until_payment"`
+	DaysOverdue          int             `json:"days_overdue"`
 	OptimalPurchaseDay   int             `json:"optimal_purchase_day"`
 	IsOptimalPurchaseDay bool            `json:"is_optimal_purchase_day"`
 	IsPaidThisCycle      bool            `json:"is_paid_this_cycle"`
@@ -58,6 +60,7 @@ type DashboardItem struct {
 
 type DashboardSummary struct {
 	Total      int `json:"total"`
+	Overdue    int `json:"overdue"`
 	Urgent     int `json:"urgent"`
 	DueSoon    int `json:"due_soon"`
 	Paid       int `json:"paid"`

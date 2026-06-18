@@ -100,6 +100,8 @@ func (s *CardStatusService) GetDashboard(ctx context.Context, userID uuid.UUID, 
 
 		summary.Total++
 		switch statusInfo.Status {
+		case domain.CardStatusOverdue:
+			summary.Overdue++
 		case domain.CardStatusUrgent:
 			summary.Urgent++
 		case domain.CardStatusDueSoon:
