@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"firebase.google.com/go/v4/messaging"
@@ -10,7 +11,10 @@ import (
 	"github.com/leonelortega/cards-reminder-api/internal/repository"
 )
 
-var ErrNoDeviceTokens = fmt.Errorf("no device tokens registered")
+var (
+	ErrNoDeviceTokens        = fmt.Errorf("no device tokens registered")
+	ErrFCMTokenNotRegistered = errors.New("fcm token not registered")
+)
 
 type NotificationService struct {
 	deviceRepo *repository.DeviceTokenRepository
@@ -82,6 +86,7 @@ func (s *NotificationService) SendToDeviceWithCleanup(ctx context.Context, fcmTo
 	if err != nil {
 		if messaging.IsRegistrationTokenNotRegistered(err) {
 			_ = s.deviceRepo.DeleteByFCMToken(ctx, fcmToken)
+			return ErrFCMTokenNotRegistered
 		}
 		return fmt.Errorf("send push notification: %w", err)
 	}

@@ -90,13 +90,13 @@ func buildUrgent(lang string, cards []CardReminder) domain.PushNotification {
 		case "en":
 			return domain.PushNotification{
 				Title: "Payment due soon",
-				Body:  fmt.Sprintf("%s is due in %d day(s).", label, days),
+				Body:  formatDueInDaysEN(label, days),
 				Data:  reminderData(ReminderKindUrgent, &card),
 			}
 		default:
 			return domain.PushNotification{
 				Title: "Pago urgente",
-				Body:  fmt.Sprintf("%s vence en %d día(s).", label, days),
+				Body:  formatDueInDaysES(label, days),
 				Data:  reminderData(ReminderKindUrgent, &card),
 			}
 		}
@@ -194,6 +194,20 @@ func buildOptimalDay(lang string, cards []CardReminder) domain.PushNotification 
 			Data:  reminderData(ReminderKindOptimalDay, nil),
 		}
 	}
+}
+
+func formatDueInDaysEN(label string, days int) string {
+	if days == 0 {
+		return fmt.Sprintf("%s is due today.", label)
+	}
+	return fmt.Sprintf("%s is due in %d day(s).", label, days)
+}
+
+func formatDueInDaysES(label string, days int) string {
+	if days == 0 {
+		return fmt.Sprintf("%s vence hoy.", label)
+	}
+	return fmt.Sprintf("%s vence en %d día(s).", label, days)
 }
 
 func cardLabel(reminder CardReminder, lang string) string {

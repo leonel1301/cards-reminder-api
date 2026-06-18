@@ -8,6 +8,44 @@ import (
 	"github.com/leonelortega/cards-reminder-api/internal/domain"
 )
 
+func TestBuildReminderNotification_urgentDueTodayEnglish(t *testing.T) {
+	card := domain.Card{
+		ID:             uuid.New(),
+		Name:           "Visa",
+		LastFourDigits: "4532",
+	}
+
+	notification := BuildReminderNotification(ReminderKindUrgent, []CardReminder{
+		{
+			Card:   card,
+			Status: domain.CardStatusInfo{DaysUntilPayment: 0},
+		},
+	}, "en")
+
+	if notification.Body != "Visa •••• 4532 is due today." {
+		t.Fatalf("unexpected body: %s", notification.Body)
+	}
+}
+
+func TestBuildReminderNotification_urgentDueTodaySpanish(t *testing.T) {
+	card := domain.Card{
+		ID:             uuid.New(),
+		Name:           "Visa",
+		LastFourDigits: "4532",
+	}
+
+	notification := BuildReminderNotification(ReminderKindUrgent, []CardReminder{
+		{
+			Card:   card,
+			Status: domain.CardStatusInfo{DaysUntilPayment: 0},
+		},
+	}, "es")
+
+	if notification.Body != "Visa •••• 4532 vence hoy." {
+		t.Fatalf("unexpected body: %s", notification.Body)
+	}
+}
+
 func TestBuildReminderNotification_urgentSpanish(t *testing.T) {
 	card := domain.Card{
 		ID:             uuid.New(),

@@ -2,6 +2,7 @@ package job
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -105,6 +106,11 @@ func (j *ReminderJob) Run(ctx context.Context) (*domain.ReminderJobResult, error
 			notification := i18n.BuildReminderNotification(batch.kind, batch.cards, device.Language)
 
 			if err := j.notificationSvc.SendToDeviceWithCleanup(ctx, device.FCMToken, notification); err != nil {
+				if errors.Is(err, service.ErrFCMTokenNotRegistered) {
+					result.StaleTokensRemoved++
+					log.Printf("reminder skipped stale token user=%s device=%s kind=%s", device.UserID, device.ID, batch.kind)
+					continue
+				}
 				log.Printf("reminder send failed user=%s device=%s kind=%s: %v", device.UserID, device.ID, batch.kind, err)
 				result.SendFailures++
 				continue
