@@ -49,6 +49,26 @@ func ComputeBillingCycle(ref time.Time, closingDay, paymentDueDay int, loc *time
 	}
 }
 
+func PreviousBillingCycle(current domain.BillingCycle, closingDay int, loc *time.Location) domain.BillingCycle {
+	prevCycleEnd := current.Start.AddDate(0, 0, -1)
+	prevYear, prevMonth := addMonths(prevCycleEnd.Year(), prevCycleEnd.Month(), -1)
+	prevClosing := clampDayInLoc(prevYear, prevMonth, closingDay, loc)
+	prevCycleStart := prevClosing.AddDate(0, 0, 1)
+
+	return domain.BillingCycle{
+		Start: prevCycleStart,
+		End:   prevCycleEnd,
+	}
+}
+
+func PaymentDueForCycleEnd(cycleEnd time.Time, closingDay, paymentDueDay int, loc *time.Location) time.Time {
+	payYear, payMonth := cycleEnd.Year(), cycleEnd.Month()
+	if paymentDueDay <= closingDay {
+		payYear, payMonth = addMonths(payYear, payMonth, 1)
+	}
+	return clampDayInLoc(payYear, payMonth, paymentDueDay, loc)
+}
+
 func CurrentMonthPaymentDue(ref time.Time, paymentDueDay int, loc *time.Location) time.Time {
 	refDate := truncateToDateInLoc(ref, loc)
 	year, month, _ := refDate.Date()
@@ -180,35 +200,34 @@ func DetermineCardStatus(paid bool, overdue bool, daysUntilPayment int, isOptima
 
 func BuildCardStatusInfo(
 	ref time.Time,
-	cycle domain.BillingCycle,
-	paymentDueDay int,
+	obligationCycle domain.BillingCycle,
+	paymentDueDate time.Time,
 	billingCycleDay int,
 	salaryDay *int,
 	paid bool,
 	loc *time.Location,
 ) domain.CardStatusInfo {
-	dueThisMonth := CurrentMonthPaymentDue(ref, paymentDueDay, loc)
-	overdue := IsPaymentOverdue(ref, paymentDueDay, paid, loc)
-	daysUntilPayment := DaysUntilCurrentMonthPayment(ref, paymentDueDay, loc)
-	daysOverdue := DaysOverdue(ref, paymentDueDay, loc)
+	refDate := truncateToDateInLoc(ref, loc)
+	paymentDueDate = truncateToDateInLoc(paymentDueDate, loc)
+
+	overdue := !paid && refDate.After(paymentDueDate)
+	daysUntilPayment := 0
+	daysOverdue := 0
+	if !paid {
+		if overdue {
+			daysOverdue = daysBetween(paymentDueDate, refDate)
+		} else {
+			daysUntilPayment = daysBetween(refDate, paymentDueDate)
+		}
+	}
+
 	optimalPurchaseDay := ComputeOptimalPurchaseDay(billingCycleDay, salaryDay)
 	isOptimal := IsOptimalPurchaseDayInMonth(ref, optimalPurchaseDay, defaultOptimalWindowDays, loc)
 
-	paymentDueDate := dueThisMonth
-	if paid || overdue {
-		if overdue {
-			paymentDueDate = dueThisMonth
-		} else {
-			paymentDueDate = NextPaymentDueDate(ref, paymentDueDay, loc)
-		}
-	} else {
-		paymentDueDate = NextPaymentDueDate(ref, paymentDueDay, loc)
-	}
-
 	return domain.CardStatusInfo{
 		Status:               DetermineCardStatus(paid, overdue, daysUntilPayment, isOptimal),
-		CycleStart:           cycle.Start,
-		CycleEnd:             cycle.End,
+		CycleStart:           obligationCycle.Start,
+		CycleEnd:             obligationCycle.End,
 		PaymentDueDate:       paymentDueDate,
 		DaysUntilPayment:     daysUntilPayment,
 		DaysOverdue:          daysOverdue,

@@ -105,9 +105,11 @@ func TestDaysOverdue(t *testing.T) {
 
 func TestBuildCardStatusInfo_overdue(t *testing.T) {
 	ref := time.Date(2026, 6, 17, 12, 0, 0, 0, time.UTC)
-	cycle := ComputeBillingCycle(ref, 10, 12, time.UTC)
+	currentCycle := ComputeBillingCycle(ref, 10, 12, time.UTC)
+	prevCycle := PreviousBillingCycle(currentCycle, 10, time.UTC)
+	paymentDue := PaymentDueForCycleEnd(prevCycle.End, 10, 12, time.UTC)
 
-	status := BuildCardStatusInfo(ref, cycle, 12, 10, nil, false, time.UTC)
+	status := BuildCardStatusInfo(ref, prevCycle, paymentDue, 10, nil, false, time.UTC)
 
 	if status.Status != domain.CardStatusOverdue {
 		t.Fatalf("got status %q, want overdue", status.Status)
@@ -115,6 +117,8 @@ func TestBuildCardStatusInfo_overdue(t *testing.T) {
 	if status.DaysOverdue != 5 {
 		t.Fatalf("got days_overdue %d, want 5", status.DaysOverdue)
 	}
+	assertDate(t, status.CycleEnd, prevCycle.End.Year(), prevCycle.End.Month(), prevCycle.End.Day())
+	assertDate(t, status.PaymentDueDate, paymentDue.Year(), paymentDue.Month(), paymentDue.Day())
 }
 
 func TestCurrentMonthPaymentDue(t *testing.T) {
@@ -161,13 +165,17 @@ func TestIsOptimalPurchaseDayInMonth(t *testing.T) {
 	}
 }
 
-func TestBuildCardStatusInfo_usesCurrentMonthPayment(t *testing.T) {
+func TestBuildCardStatusInfo_usesPaymentObligationCycle(t *testing.T) {
 	ref := time.Date(2026, 6, 14, 12, 0, 0, 0, time.UTC)
-	cycle := ComputeBillingCycle(ref, 10, 20, time.UTC)
+	currentCycle := ComputeBillingCycle(ref, 10, 20, time.UTC)
+	prevCycle := PreviousBillingCycle(currentCycle, 10, time.UTC)
+	paymentDue := PaymentDueForCycleEnd(prevCycle.End, 10, 20, time.UTC)
 	salaryDay := 15
 
-	status := BuildCardStatusInfo(ref, cycle, 20, 10, &salaryDay, false, time.UTC)
+	status := BuildCardStatusInfo(ref, prevCycle, paymentDue, 10, &salaryDay, false, time.UTC)
 
+	assertDate(t, status.CycleStart, prevCycle.Start.Year(), prevCycle.Start.Month(), prevCycle.Start.Day())
+	assertDate(t, status.CycleEnd, prevCycle.End.Year(), prevCycle.End.Month(), prevCycle.End.Day())
 	assertDate(t, status.PaymentDueDate, 2026, 6, 20)
 	if status.DaysUntilPayment != 6 {
 		t.Fatalf("got %d days_until_payment, want 6", status.DaysUntilPayment)
@@ -178,6 +186,27 @@ func TestBuildCardStatusInfo_usesCurrentMonthPayment(t *testing.T) {
 	if status.Status != domain.CardStatusDueSoon {
 		t.Fatalf("got status %q, want due_soon", status.Status)
 	}
+}
+
+func TestBuildCardStatusInfo_BCP_paymentObligationCycle(t *testing.T) {
+	ref := time.Date(2026, 6, 18, 12, 0, 0, 0, time.UTC)
+	currentCycle := ComputeBillingCycle(ref, 25, 23, time.UTC)
+	prevCycle := PreviousBillingCycle(currentCycle, 25, time.UTC)
+	paymentDue := PaymentDueForCycleEnd(prevCycle.End, 25, 23, time.UTC)
+
+	status := BuildCardStatusInfo(ref, prevCycle, paymentDue, 25, nil, false, time.UTC)
+
+	assertDate(t, status.CycleStart, 2026, 4, 26)
+	assertDate(t, status.CycleEnd, 2026, 5, 25)
+	assertDate(t, status.PaymentDueDate, 2026, 6, 23)
+	if status.DaysUntilPayment != 5 {
+		t.Fatalf("got %d days_until_payment, want 5", status.DaysUntilPayment)
+	}
+	if status.Status != domain.CardStatusDueSoon {
+		t.Fatalf("got status %q, want due_soon", status.Status)
+	}
+	assertDate(t, currentCycle.Start, 2026, 5, 26)
+	assertDate(t, currentCycle.End, 2026, 6, 25)
 }
 
 func TestDetermineCardStatus_priority(t *testing.T) {

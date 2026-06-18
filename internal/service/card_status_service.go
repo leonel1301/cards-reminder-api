@@ -132,9 +132,12 @@ func (s *CardStatusService) MarkPaid(ctx context.Context, userID, cardID uuid.UU
 	}
 
 	loc := ResolveLocation(timezone)
-	cycle := ComputeBillingCycle(s.now(), card.BillingCycleDay, card.PaymentDueDay, loc)
-	if err := s.paymentRepo.Create(ctx, cardID, cycle.End, notes); err != nil {
-		paid, checkErr := s.paymentRepo.HasPaymentForCycle(ctx, cardID, cycle.End)
+	obligationCycle, _, _, err := s.resolvePaymentObligation(ctx, cardID, s.now(), card.BillingCycleDay, card.PaymentDueDay, loc)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.paymentRepo.Create(ctx, cardID, obligationCycle.End, notes); err != nil {
+		paid, checkErr := s.paymentRepo.HasPaymentForCycle(ctx, cardID, obligationCycle.End)
 		if checkErr == nil && paid {
 			return s.GetStatus(ctx, userID, cardID, timezone)
 		}
@@ -201,16 +204,42 @@ func (s *CardStatusService) ListPayments(ctx context.Context, userID, cardID uui
 }
 
 func (s *CardStatusService) buildStatusForCard(ctx context.Context, card domain.Card, ref time.Time, loc *time.Location) (domain.CardStatusInfo, []time.Time, error) {
-	cycle := ComputeBillingCycle(ref, card.BillingCycleDay, card.PaymentDueDay, loc)
-	paid, err := s.paymentRepo.HasPaymentForCycle(ctx, card.ID, cycle.End)
+	obligationCycle, paymentDue, paid, err := s.resolvePaymentObligation(ctx, card.ID, ref, card.BillingCycleDay, card.PaymentDueDay, loc)
 	if err != nil {
 		return domain.CardStatusInfo{}, nil, err
 	}
 
 	salaryDay := s.ownerSalaryDay(ctx, card.OwnerID, card.UserID)
-	statusInfo := BuildCardStatusInfo(ref, cycle, card.PaymentDueDay, card.BillingCycleDay, salaryDay, paid, loc)
+	statusInfo := BuildCardStatusInfo(ref, obligationCycle, paymentDue, card.BillingCycleDay, salaryDay, paid, loc)
 	optimalDays := OptimalPurchaseDaysInMonth(ref, statusInfo.OptimalPurchaseDay, defaultOptimalWindowDays, loc)
 	return statusInfo, optimalDays, nil
+}
+
+func (s *CardStatusService) resolvePaymentObligation(
+	ctx context.Context,
+	cardID uuid.UUID,
+	ref time.Time,
+	closingDay, paymentDueDay int,
+	loc *time.Location,
+) (domain.BillingCycle, time.Time, bool, error) {
+	currentCycle := ComputeBillingCycle(ref, closingDay, paymentDueDay, loc)
+	prevCycle := PreviousBillingCycle(currentCycle, closingDay, loc)
+
+	paidPrev, err := s.paymentRepo.HasPaymentForCycle(ctx, cardID, prevCycle.End)
+	if err != nil {
+		return domain.BillingCycle{}, time.Time{}, false, err
+	}
+
+	if !paidPrev {
+		return prevCycle, PaymentDueForCycleEnd(prevCycle.End, closingDay, paymentDueDay, loc), false, nil
+	}
+
+	paidCurrent, err := s.paymentRepo.HasPaymentForCycle(ctx, cardID, currentCycle.End)
+	if err != nil {
+		return domain.BillingCycle{}, time.Time{}, false, err
+	}
+
+	return currentCycle, currentCycle.PaymentDue, paidCurrent, nil
 }
 
 func (s *CardStatusService) ownerSalaryDay(ctx context.Context, ownerID, userID uuid.UUID) *int {
