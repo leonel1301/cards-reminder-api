@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/leonelortega/cards-reminder-api/internal/domain"
+	"github.com/leonelortega/cards-reminder-api/internal/i18n"
 	"github.com/leonelortega/cards-reminder-api/internal/middleware"
 	"github.com/leonelortega/cards-reminder-api/internal/repository"
 	"github.com/leonelortega/cards-reminder-api/internal/service"
@@ -46,13 +47,13 @@ type updateCardRequest struct {
 func (h *CardHandler) List(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
 	cards, err := h.cardService.List(c.Request.Context(), user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list cards"})
+		respondError(c, http.StatusInternalServerError, i18n.ErrFailedToListCards)
 		return
 	}
 
@@ -66,13 +67,13 @@ func (h *CardHandler) List(c *gin.Context) {
 func (h *CardHandler) Get(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
 	cardID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid card id"})
+		respondError(c, http.StatusBadRequest, i18n.ErrInvalidCardID)
 		return
 	}
 
@@ -88,7 +89,7 @@ func (h *CardHandler) Get(c *gin.Context) {
 func (h *CardHandler) Create(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
@@ -119,13 +120,13 @@ func (h *CardHandler) Create(c *gin.Context) {
 func (h *CardHandler) Update(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
 	cardID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid card id"})
+		respondError(c, http.StatusBadRequest, i18n.ErrInvalidCardID)
 		return
 	}
 
@@ -157,13 +158,13 @@ func (h *CardHandler) Update(c *gin.Context) {
 func (h *CardHandler) Delete(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
 	cardID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid card id"})
+		respondError(c, http.StatusBadRequest, i18n.ErrInvalidCardID)
 		return
 	}
 
@@ -179,10 +180,10 @@ func (h *CardHandler) handleCardError(c *gin.Context, err error) {
 	var validationErr service.ValidationError
 	switch {
 	case errors.As(err, &validationErr):
-		c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Error()})
+		respondValidationError(c, validationErr)
 	case errors.Is(err, repository.ErrNotFound):
-		c.JSON(http.StatusNotFound, gin.H{"error": "card not found"})
+		respondError(c, http.StatusNotFound, i18n.ErrCardNotFound)
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		respondError(c, http.StatusInternalServerError, i18n.ErrInternalServerError)
 	}
 }

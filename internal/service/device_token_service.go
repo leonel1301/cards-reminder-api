@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leonelortega/cards-reminder-api/internal/domain"
+	"github.com/leonelortega/cards-reminder-api/internal/i18n"
 	"github.com/leonelortega/cards-reminder-api/internal/repository"
 )
 
@@ -27,8 +28,10 @@ func (s *DeviceTokenService) Register(ctx context.Context, userID uuid.UUID, inp
 		input.Platform = "ios"
 	}
 
-	if input.Language = normalizeLanguage(input.Language); input.Language == "" {
+	if language := i18n.NormalizeLanguageTag(input.Language); language == "" {
 		input.Language = "es"
+	} else {
+		input.Language = i18n.NormalizeLanguage(language)
 	}
 
 	input.Timezone = NormalizeTimezone(input.Timezone)
@@ -49,10 +52,7 @@ func (s *DeviceTokenService) GetLanguageForUser(ctx context.Context, userID uuid
 	if err != nil {
 		return "", err
 	}
-	language = normalizeLanguage(language)
-	if language == "" {
-		return "es", nil
-	}
+	language = i18n.NormalizeLanguage(language)
 	return language, nil
 }
 
@@ -63,17 +63,4 @@ func (s *DeviceTokenService) Unregister(ctx context.Context, userID uuid.UUID, f
 	}
 
 	return s.repo.DeleteByTokenAndUserID(ctx, userID, fcmToken)
-}
-
-func normalizeLanguage(language string) string {
-	language = strings.TrimSpace(strings.ToLower(language))
-	if language == "" {
-		return ""
-	}
-
-	if idx := strings.Index(language, "-"); idx > 0 {
-		language = language[:idx]
-	}
-
-	return language
 }

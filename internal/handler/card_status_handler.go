@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/leonelortega/cards-reminder-api/internal/i18n"
 	"github.com/leonelortega/cards-reminder-api/internal/middleware"
 	"github.com/leonelortega/cards-reminder-api/internal/repository"
 	"github.com/leonelortega/cards-reminder-api/internal/service"
@@ -30,13 +31,13 @@ type markPaidRequest struct {
 func (h *CardStatusHandler) GetStatus(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
 	cardID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid card id"})
+		respondError(c, http.StatusBadRequest, i18n.ErrInvalidCardID)
 		return
 	}
 
@@ -57,13 +58,13 @@ func (h *CardStatusHandler) GetStatus(c *gin.Context) {
 func (h *CardStatusHandler) GetOptimalPurchaseDays(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
 	cardID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid card id"})
+		respondError(c, http.StatusBadRequest, i18n.ErrInvalidCardID)
 		return
 	}
 
@@ -84,7 +85,7 @@ func (h *CardStatusHandler) GetOptimalPurchaseDays(c *gin.Context) {
 func (h *CardStatusHandler) GetDashboard(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
@@ -93,15 +94,11 @@ func (h *CardStatusHandler) GetDashboard(c *gin.Context) {
 		return
 	}
 
-	language, err := h.deviceTokenService.GetLanguageForUser(c.Request.Context(), user.ID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve language"})
-		return
-	}
+	language := middleware.LanguageFromContext(c)
 
 	response, err := h.cardStatusService.GetDashboard(c.Request.Context(), user.ID, timezone, language)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build dashboard"})
+		respondError(c, http.StatusInternalServerError, i18n.ErrFailedToBuildDashboard)
 		return
 	}
 
@@ -111,13 +108,13 @@ func (h *CardStatusHandler) GetDashboard(c *gin.Context) {
 func (h *CardStatusHandler) GetCurrentCycle(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
 	cardID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid card id"})
+		respondError(c, http.StatusBadRequest, i18n.ErrInvalidCardID)
 		return
 	}
 
@@ -138,13 +135,13 @@ func (h *CardStatusHandler) GetCurrentCycle(c *gin.Context) {
 func (h *CardStatusHandler) ListPayments(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
 	cardID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid card id"})
+		respondError(c, http.StatusBadRequest, i18n.ErrInvalidCardID)
 		return
 	}
 
@@ -160,13 +157,13 @@ func (h *CardStatusHandler) ListPayments(c *gin.Context) {
 func (h *CardStatusHandler) MarkPaid(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
 	cardID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid card id"})
+		respondError(c, http.StatusBadRequest, i18n.ErrInvalidCardID)
 		return
 	}
 
@@ -193,7 +190,7 @@ func (h *CardStatusHandler) MarkPaid(c *gin.Context) {
 func (h *CardStatusHandler) userTimezone(c *gin.Context, userID uuid.UUID) (string, bool) {
 	timezone, err := h.deviceTokenService.GetTimezoneForUser(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve timezone"})
+		respondError(c, http.StatusInternalServerError, i18n.ErrFailedToResolveTimezone)
 		return "", false
 	}
 	return timezone, true
@@ -202,8 +199,8 @@ func (h *CardStatusHandler) userTimezone(c *gin.Context, userID uuid.UUID) (stri
 func (h *CardStatusHandler) handleError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, repository.ErrNotFound):
-		c.JSON(http.StatusNotFound, gin.H{"error": "card not found"})
+		respondError(c, http.StatusNotFound, i18n.ErrCardNotFound)
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		respondError(c, http.StatusInternalServerError, i18n.ErrInternalServerError)
 	}
 }

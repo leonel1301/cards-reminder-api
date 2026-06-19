@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/leonelortega/cards-reminder-api/internal/domain"
+	"github.com/leonelortega/cards-reminder-api/internal/i18n"
 )
 
 type ReminderKind string
@@ -23,7 +24,7 @@ type CardReminder struct {
 }
 
 func BuildReminderNotification(kind ReminderKind, cards []CardReminder, language string) domain.PushNotification {
-	lang := normalizeLanguage(language)
+	lang := i18n.NormalizeLanguage(language)
 
 	switch kind {
 	case ReminderKindOverdue:
@@ -239,15 +240,4 @@ func reminderData(kind ReminderKind, card *CardReminder) map[string]string {
 		data["owner_name"] = card.Owner.Name
 	}
 	return data
-}
-
-func normalizeLanguage(language string) string {
-	language = strings.TrimSpace(strings.ToLower(language))
-	if language == "" {
-		return "es"
-	}
-	if idx := strings.Index(language, "-"); idx > 0 {
-		language = language[:idx]
-	}
-	return language
 }

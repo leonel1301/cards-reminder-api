@@ -42,7 +42,7 @@ func (r *Router) Setup() *gin.Engine {
 	router.GET("/health", r.authHandler.Health)
 
 	authGroup := router.Group("/")
-	authGroup.Use(r.auth.RequireAuth(), r.auth.RequireUser())
+	authGroup.Use(middleware.ResolveLanguage(), r.auth.RequireAuth(), r.auth.RequireUser())
 	{
 		authGroup.POST("/auth/session", r.authHandler.CreateSession)
 		authGroup.GET("/me", r.authHandler.GetMe)

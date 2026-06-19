@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/leonelortega/cards-reminder-api/internal/domain"
+	"github.com/leonelortega/cards-reminder-api/internal/i18n"
 	"github.com/leonelortega/cards-reminder-api/internal/middleware"
 	"github.com/leonelortega/cards-reminder-api/internal/service"
 )
@@ -26,7 +27,7 @@ type sendTestNotificationRequest struct {
 func (h *NotificationHandler) SendTest(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
@@ -43,7 +44,11 @@ func (h *NotificationHandler) SendTest(c *gin.Context) {
 
 	body := req.Body
 	if body == "" {
-		body = "Notificación de prueba"
+		if middleware.LanguageFromContext(c) == "en" {
+			body = "Test notification"
+		} else {
+			body = "Notificación de prueba"
+		}
 	}
 
 	result, err := h.notificationService.SendToUser(c.Request.Context(), user.ID, domain.PushNotification{
@@ -55,10 +60,10 @@ func (h *NotificationHandler) SendTest(c *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, service.ErrNoDeviceTokens) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "no device tokens registered"})
+			respondError(c, http.StatusNotFound, i18n.ErrNoDeviceTokensRegistered)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send notification"})
+		respondError(c, http.StatusInternalServerError, i18n.ErrFailedToSendNotification)
 		return
 	}
 

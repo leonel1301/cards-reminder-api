@@ -7,6 +7,7 @@ import (
 	"firebase.google.com/go/v4/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/leonelortega/cards-reminder-api/internal/domain"
+	"github.com/leonelortega/cards-reminder-api/internal/i18n"
 	"github.com/leonelortega/cards-reminder-api/internal/service"
 )
 
@@ -33,13 +34,17 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, ok := extractBearerToken(c.GetHeader("Authorization"))
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid authorization header"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": i18n.Error(LanguageFromContext(c), i18n.ErrMissingAuthorizationHeader),
+			})
 			return
 		}
 
 		firebaseToken, err := m.authClient.VerifyIDToken(c.Request.Context(), token)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": i18n.Error(LanguageFromContext(c), i18n.ErrInvalidToken),
+			})
 			return
 		}
 
@@ -57,7 +62,9 @@ func (m *AuthMiddleware) RequireUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		firebaseUID, ok := c.Get(ContextKeyFirebaseUID)
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": i18n.Error(LanguageFromContext(c), i18n.ErrUnauthenticated),
+			})
 			return
 		}
 
@@ -71,7 +78,9 @@ func (m *AuthMiddleware) RequireUser() gin.HandlerFunc {
 			displayName.(*string),
 		)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve user"})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": i18n.Error(LanguageFromContext(c), i18n.ErrFailedToResolveUser),
+			})
 			return
 		}
 

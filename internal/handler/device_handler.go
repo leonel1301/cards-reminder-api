@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/leonelortega/cards-reminder-api/internal/domain"
+	"github.com/leonelortega/cards-reminder-api/internal/i18n"
 	"github.com/leonelortega/cards-reminder-api/internal/middleware"
 	"github.com/leonelortega/cards-reminder-api/internal/repository"
 	"github.com/leonelortega/cards-reminder-api/internal/service"
@@ -34,7 +35,7 @@ type unregisterDeviceRequest struct {
 func (h *DeviceHandler) Register(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
@@ -61,7 +62,7 @@ func (h *DeviceHandler) Register(c *gin.Context) {
 func (h *DeviceHandler) Unregister(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
@@ -83,11 +84,11 @@ func (h *DeviceHandler) handleError(c *gin.Context, err error) {
 	var validationErr service.ValidationError
 	switch {
 	case errors.As(err, &validationErr):
-		c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Error()})
+		respondValidationError(c, validationErr)
 	case errors.Is(err, repository.ErrNotFound):
-		c.JSON(http.StatusNotFound, gin.H{"error": "device token not found"})
+		respondError(c, http.StatusNotFound, i18n.ErrDeviceTokenNotFound)
 	default:
 		log.Printf("device handler error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		respondError(c, http.StatusInternalServerError, i18n.ErrInternalServerError)
 	}
 }

@@ -2,10 +2,10 @@ package service
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/leonelortega/cards-reminder-api/internal/domain"
+	"github.com/leonelortega/cards-reminder-api/internal/i18n"
 )
 
 type purchaseCandidate struct {
@@ -105,7 +105,7 @@ func NextSalaryDate(ref time.Time, salaryDay int, loc *time.Location) time.Time 
 }
 
 func buildBestForPurchaseWhy(candidate purchaseCandidate, refDate time.Time, loc *time.Location, language string) string {
-	lang := normalizeRecommendationLanguage(language)
+	lang := i18n.NormalizeLanguage(language)
 	cardLabel := formatCardLabel(candidate.Card)
 	dueDate := formatRecommendationDate(candidate.NewPurchaseDue, loc)
 
@@ -194,18 +194,4 @@ func formatCardLabel(card domain.Card) string {
 
 func formatRecommendationDate(date time.Time, loc *time.Location) string {
 	return date.In(loc).Format("02/01/2006")
-}
-
-func normalizeRecommendationLanguage(language string) string {
-	language = strings.TrimSpace(strings.ToLower(language))
-	if language == "" {
-		return "es"
-	}
-	if idx := strings.Index(language, "-"); idx > 0 {
-		language = language[:idx]
-	}
-	if language == "en" {
-		return "en"
-	}
-	return "es"
 }

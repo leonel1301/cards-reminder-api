@@ -16,7 +16,7 @@ func NewAuthHandler() *AuthHandler {
 func (h *AuthHandler) CreateSession(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
@@ -26,7 +26,7 @@ func (h *AuthHandler) CreateSession(c *gin.Context) {
 func (h *AuthHandler) GetMe(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		respondUnauthenticated(c)
 		return
 	}
 
