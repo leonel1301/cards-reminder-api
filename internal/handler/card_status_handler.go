@@ -93,7 +93,13 @@ func (h *CardStatusHandler) GetDashboard(c *gin.Context) {
 		return
 	}
 
-	response, err := h.cardStatusService.GetDashboard(c.Request.Context(), user.ID, timezone)
+	language, err := h.deviceTokenService.GetLanguageForUser(c.Request.Context(), user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve language"})
+		return
+	}
+
+	response, err := h.cardStatusService.GetDashboard(c.Request.Context(), user.ID, timezone, language)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build dashboard"})
 		return

@@ -72,8 +72,13 @@ func (s *CardStatusService) GetOptimalPurchaseDays(ctx context.Context, userID, 
 	}, nil
 }
 
-func (s *CardStatusService) GetDashboard(ctx context.Context, userID uuid.UUID, timezone string) (*domain.DashboardResponse, error) {
+func (s *CardStatusService) GetDashboard(ctx context.Context, userID uuid.UUID, timezone, language string) (*domain.DashboardResponse, error) {
 	cards, err := s.cardRepo.ListByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	ownersByID, err := s.loadOwnersByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,6 +86,7 @@ func (s *CardStatusService) GetDashboard(ctx context.Context, userID uuid.UUID, 
 	loc := ResolveLocation(timezone)
 	now := s.now()
 	items := make([]domain.DashboardItem, 0)
+	purchaseCandidates := make([]purchaseCandidate, 0)
 	summary := domain.DashboardSummary{}
 
 	for _, card := range cards {
@@ -97,6 +103,12 @@ func (s *CardStatusService) GetDashboard(ctx context.Context, userID uuid.UUID, 
 			Card:   card,
 			Status: statusInfo,
 		})
+
+		var salaryDay *int
+		if owner, ok := ownersByID[card.OwnerID]; ok {
+			salaryDay = owner.SalaryDay
+		}
+		purchaseCandidates = append(purchaseCandidates, buildPurchaseCandidate(card, statusInfo, now, salaryDay, loc))
 
 		summary.Total++
 		switch statusInfo.Status {
@@ -120,8 +132,9 @@ func (s *CardStatusService) GetDashboard(ctx context.Context, userID uuid.UUID, 
 	}
 
 	return &domain.DashboardResponse{
-		Cards:   items,
-		Summary: summary,
+		Cards:           items,
+		Summary:         summary,
+		BestForPurchase: RecommendBestForPurchase(purchaseCandidates, now, loc, language),
 	}, nil
 }
 
@@ -248,4 +261,18 @@ func (s *CardStatusService) ownerSalaryDay(ctx context.Context, ownerID, userID 
 		return nil
 	}
 	return owner.SalaryDay
+}
+
+func (s *CardStatusService) loadOwnersByID(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]domain.Owner, error) {
+	owners, err := s.ownerRepo.ListByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	ownersByID := make(map[uuid.UUID]domain.Owner, len(owners))
+	for _, owner := range owners {
+		ownersByID[owner.ID] = owner
+	}
+
+	return ownersByID, nil
 }

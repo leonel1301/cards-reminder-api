@@ -68,9 +68,15 @@ type DashboardSummary struct {
 	OnTrack    int `json:"on_track"`
 }
 
+type BestForPurchaseRecommendation struct {
+	CardID uuid.UUID `json:"card_id"`
+	Why    string    `json:"why"`
+}
+
 type DashboardResponse struct {
-	Cards   []DashboardItem  `json:"cards"`
-	Summary DashboardSummary `json:"summary"`
+	Cards            []DashboardItem                `json:"cards"`
+	Summary          DashboardSummary               `json:"summary"`
+	BestForPurchase  *BestForPurchaseRecommendation `json:"best_for_purchase"`
 }
 
 type Payment struct {

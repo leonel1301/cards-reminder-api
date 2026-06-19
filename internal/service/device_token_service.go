@@ -44,6 +44,18 @@ func (s *DeviceTokenService) GetTimezoneForUser(ctx context.Context, userID uuid
 	return ResolveTimezone(timezone, DefaultTimezone), nil
 }
 
+func (s *DeviceTokenService) GetLanguageForUser(ctx context.Context, userID uuid.UUID) (string, error) {
+	language, err := s.repo.GetLatestLanguageByUserID(ctx, userID)
+	if err != nil {
+		return "", err
+	}
+	language = normalizeLanguage(language)
+	if language == "" {
+		return "es", nil
+	}
+	return language, nil
+}
+
 func (s *DeviceTokenService) Unregister(ctx context.Context, userID uuid.UUID, fcmToken string) error {
 	fcmToken = strings.TrimSpace(fcmToken)
 	if fcmToken == "" {

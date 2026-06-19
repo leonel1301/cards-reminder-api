@@ -79,7 +79,7 @@ func (j *ReminderJob) Run(ctx context.Context) (*domain.ReminderJobResult, error
 		cacheKey := device.UserID.String() + "|" + timezone
 		dashboard, ok := dashboardCache[cacheKey]
 		if !ok {
-			dashboard, err = j.cardStatusSvc.GetDashboard(ctx, device.UserID, timezone)
+			dashboard, err = j.cardStatusSvc.GetDashboard(ctx, device.UserID, timezone, device.Language)
 			if err != nil {
 				return nil, err
 			}

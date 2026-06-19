@@ -119,6 +119,27 @@ func (r *DeviceTokenRepository) GetLatestTimezoneByUserID(ctx context.Context, u
 	return timezone, nil
 }
 
+func (r *DeviceTokenRepository) GetLatestLanguageByUserID(ctx context.Context, userID uuid.UUID) (string, error) {
+	const query = `
+		SELECT language
+		FROM device_tokens
+		WHERE user_id = $1
+		ORDER BY updated_at DESC
+		LIMIT 1
+	`
+
+	var language string
+	err := r.pool.QueryRow(ctx, query, userID).Scan(&language)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", nil
+		}
+		return "", fmt.Errorf("get latest language: %w", err)
+	}
+
+	return language, nil
+}
+
 func (r *DeviceTokenRepository) DeleteByFCMToken(ctx context.Context, fcmToken string) error {
 	const query = `DELETE FROM device_tokens WHERE fcm_token = $1`
 
