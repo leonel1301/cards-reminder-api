@@ -55,7 +55,7 @@ func buildOverdue(lang string, cards []CardReminder) domain.PushNotification {
 		default:
 			return domain.PushNotification{
 				Title: "Pago vencido",
-				Body:  fmt.Sprintf("%s está vencida hace %d día(s).", label, days),
+				Body:  fmt.Sprintf("%s tiene el pago vencido desde hace %d día(s).", label, days),
 				Data:  reminderData(ReminderKindOverdue, &card),
 			}
 		}
@@ -76,7 +76,7 @@ func buildOverdue(lang string, cards []CardReminder) domain.PushNotification {
 	default:
 		return domain.PushNotification{
 			Title: "Pagos vencidos",
-			Body:  fmt.Sprintf("Tienes tarjetas vencidas: %s.", strings.Join(names, ", ")),
+			Body:  fmt.Sprintf("Tienes pagos vencidos en: %s.", strings.Join(names, ", ")),
 			Data:  reminderData(ReminderKindOverdue, nil),
 		}
 	}

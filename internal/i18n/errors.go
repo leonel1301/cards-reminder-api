@@ -82,7 +82,7 @@ func Error(lang string, key ErrorKey) string {
 		},
 		ErrFailedToBuildDashboard: {
 			"en": "failed to build dashboard",
-			"es": "no se pudo construir el panel",
+			"es": "no se pudo generar el resumen",
 		},
 		ErrOwnerHasAssignedCards: {
 			"en": "owner has assigned cards",
@@ -134,7 +134,7 @@ func validationMessage(lang, message string) string {
 		},
 		"cannot delete self owner": {
 			"en": "cannot delete self owner",
-			"es": "no se puede eliminar el titular propio",
+			"es": "no se puede eliminar tu perfil de titular",
 		},
 	}
 

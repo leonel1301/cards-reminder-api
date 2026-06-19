@@ -123,7 +123,7 @@ func buildBestForPurchaseWhyES(
 	loc *time.Location,
 ) string {
 	why := fmt.Sprintf(
-		"%s te da %d días de financiamiento: una compra hoy vence el %s.",
+		"%s te ofrece %d días de financiación: una compra hoy vence el %s.",
 		cardLabel,
 		candidate.FinancingDays,
 		dueDate,
@@ -133,16 +133,16 @@ func buildBestForPurchaseWhyES(
 		nextSalary := NextSalaryDate(refDate, *candidate.SalaryDay, loc)
 		salaryDate := formatRecommendationDate(nextSalary, loc)
 		if candidate.AlignsWithSalary {
-			why += fmt.Sprintf(" El pago cae después de tu sueldo del %s.", salaryDate)
+			why += fmt.Sprintf(" El vencimiento queda después de tu salario del %s.", salaryDate)
 		} else {
-			why += fmt.Sprintf(" Ojo: el pago cae antes de tu sueldo del %s.", salaryDate)
+			why += fmt.Sprintf(" Atención: el vencimiento queda antes de tu salario del %s.", salaryDate)
 		}
 	}
 
 	if !candidate.Status.IsPaidThisCycle {
 		pendingDate := formatRecommendationDate(truncateToDateInLoc(candidate.Status.PaymentDueDate, loc), loc)
 		why += fmt.Sprintf(
-			" Igual tenés un pago pendiente el %s por el ciclo anterior; la compra nueva no lo reemplaza.",
+			" Sin embargo, tienes un pago pendiente el %s del ciclo anterior; una nueva compra no lo sustituye.",
 			pendingDate,
 		)
 	}
