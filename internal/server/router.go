@@ -46,6 +46,7 @@ func (r *Router) Setup() *gin.Engine {
 	{
 		authGroup.POST("/auth/session", r.authHandler.CreateSession)
 		authGroup.GET("/me", r.authHandler.GetMe)
+		authGroup.DELETE("/me", r.authHandler.DeleteAccount)
 
 		authGroup.GET("/owners", r.ownerHandler.List)
 		authGroup.POST("/owners", r.ownerHandler.Create)

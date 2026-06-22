@@ -89,3 +89,18 @@ func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Use
 
 	return &user, nil
 }
+
+func (r *UserRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	const query = `DELETE FROM users WHERE id = $1`
+
+	result, err := r.pool.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("delete user: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}

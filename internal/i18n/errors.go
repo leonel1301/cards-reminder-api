@@ -22,6 +22,8 @@ const (
 	ErrOwnerHasAssignedCards            ErrorKey = "owner_has_assigned_cards"
 	ErrNoDeviceTokensRegistered         ErrorKey = "no_device_tokens_registered"
 	ErrFailedToSendNotification         ErrorKey = "failed_to_send_notification"
+	ErrUserNotFound                     ErrorKey = "user_not_found"
+	ErrFailedToDeleteAccount            ErrorKey = "failed_to_delete_account"
 )
 
 func Error(lang string, key ErrorKey) string {
@@ -95,6 +97,14 @@ func Error(lang string, key ErrorKey) string {
 		ErrFailedToSendNotification: {
 			"en": "failed to send notification",
 			"es": "no se pudo enviar la notificación",
+		},
+		ErrUserNotFound: {
+			"en": "user not found",
+			"es": "usuario no encontrado",
+		},
+		ErrFailedToDeleteAccount: {
+			"en": "failed to delete account",
+			"es": "no se pudo eliminar la cuenta",
 		},
 	}
 
