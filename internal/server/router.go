@@ -46,6 +46,7 @@ func (r *Router) Setup() *gin.Engine {
 	router := gin.Default()
 
 	router.GET("/health", r.authHandler.Health)
+	router.GET("/terms", r.authHandler.GetTerms)
 
 	feedbackAdminGroup := router.Group("/")
 	feedbackAdminGroup.Use(middleware.ResolveLanguage(), middleware.RequireFeedbackAdminToken(r.feedbackAdminToken))

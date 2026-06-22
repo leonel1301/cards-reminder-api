@@ -85,3 +85,7 @@ func (h *AuthHandler) AcceptTerms(c *gin.Context) {
 func (h *AuthHandler) Health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "API funcionando"})
 }
+
+func (h *AuthHandler) GetTerms(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"terms_version": h.termsVersion})
+}
