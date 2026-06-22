@@ -56,6 +56,9 @@ func main() {
 	deviceHandler := handler.NewDeviceHandler(deviceTokenService)
 	notificationService := service.NewNotificationService(deviceTokenRepo, firebaseApp.Messaging)
 	notificationHandler := handler.NewNotificationHandler(notificationService)
+	feedbackRepo := repository.NewFeedbackRepository(pool)
+	feedbackService := service.NewFeedbackService(feedbackRepo)
+	feedbackHandler := handler.NewFeedbackHandler(feedbackService)
 
 	router := server.NewRouter(
 		authHandler,
@@ -64,7 +67,9 @@ func main() {
 		ownerHandler,
 		deviceHandler,
 		notificationHandler,
+		feedbackHandler,
 		authMiddleware,
+		cfg.FeedbackAdminToken,
 	).Setup()
 
 	go func() {

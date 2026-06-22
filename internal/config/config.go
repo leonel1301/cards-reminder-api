@@ -13,6 +13,7 @@ type Config struct {
 	Port                    string
 	DatabaseURL             string
 	FirebaseCredentialsPath string
+	FeedbackAdminToken      string
 }
 
 type JobConfig struct {
@@ -29,6 +30,7 @@ func Load() (*Config, error) {
 		Port:                    envOrDefault("PORT", "8080"),
 		DatabaseURL:             os.Getenv("DATABASE_URL"),
 		FirebaseCredentialsPath: os.Getenv("FIREBASE_CREDENTIALS_PATH"),
+		FeedbackAdminToken:      os.Getenv("FEEDBACK_ADMIN_TOKEN"),
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -36,6 +38,9 @@ func Load() (*Config, error) {
 	}
 	if cfg.FirebaseCredentialsPath == "" {
 		return nil, fmt.Errorf("FIREBASE_CREDENTIALS_PATH is required")
+	}
+	if cfg.FeedbackAdminToken == "" {
+		return nil, fmt.Errorf("FEEDBACK_ADMIN_TOKEN is required")
 	}
 
 	return cfg, nil

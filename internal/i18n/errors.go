@@ -24,6 +24,10 @@ const (
 	ErrFailedToSendNotification         ErrorKey = "failed_to_send_notification"
 	ErrUserNotFound                     ErrorKey = "user_not_found"
 	ErrFailedToDeleteAccount            ErrorKey = "failed_to_delete_account"
+	ErrInvalidFeedbackID                ErrorKey = "invalid_feedback_id"
+	ErrFeedbackNotFound                 ErrorKey = "feedback_not_found"
+	ErrFailedToListFeedback             ErrorKey = "failed_to_list_feedback"
+	ErrInvalidFeedbackAdminToken        ErrorKey = "invalid_feedback_admin_token"
 )
 
 func Error(lang string, key ErrorKey) string {
@@ -105,6 +109,22 @@ func Error(lang string, key ErrorKey) string {
 		ErrFailedToDeleteAccount: {
 			"en": "failed to delete account",
 			"es": "no se pudo eliminar la cuenta",
+		},
+		ErrInvalidFeedbackID: {
+			"en": "invalid feedback id",
+			"es": "id de feedback inválido",
+		},
+		ErrFeedbackNotFound: {
+			"en": "feedback not found",
+			"es": "feedback no encontrado",
+		},
+		ErrFailedToListFeedback: {
+			"en": "failed to list feedback",
+			"es": "no se pudo listar el feedback",
+		},
+		ErrInvalidFeedbackAdminToken: {
+			"en": "invalid or missing feedback admin token",
+			"es": "token de administración de feedback inválido o ausente",
 		},
 	}
 

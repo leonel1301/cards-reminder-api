@@ -13,7 +13,9 @@ type Router struct {
 	ownerHandler      *handler.OwnerHandler
 	deviceHandler     *handler.DeviceHandler
 	notificationHandler *handler.NotificationHandler
-	auth              *middleware.AuthMiddleware
+	feedbackHandler     *handler.FeedbackHandler
+	auth                *middleware.AuthMiddleware
+	feedbackAdminToken  string
 }
 
 func NewRouter(
@@ -23,7 +25,9 @@ func NewRouter(
 	ownerHandler *handler.OwnerHandler,
 	deviceHandler *handler.DeviceHandler,
 	notificationHandler *handler.NotificationHandler,
+	feedbackHandler *handler.FeedbackHandler,
 	auth *middleware.AuthMiddleware,
+	feedbackAdminToken string,
 ) *Router {
 	return &Router{
 		authHandler:         authHandler,
@@ -32,7 +36,9 @@ func NewRouter(
 		ownerHandler:        ownerHandler,
 		deviceHandler:       deviceHandler,
 		notificationHandler: notificationHandler,
+		feedbackHandler:     feedbackHandler,
 		auth:                auth,
+		feedbackAdminToken:  feedbackAdminToken,
 	}
 }
 
@@ -41,11 +47,18 @@ func (r *Router) Setup() *gin.Engine {
 
 	router.GET("/health", r.authHandler.Health)
 
+	feedbackAdminGroup := router.Group("/")
+	feedbackAdminGroup.Use(middleware.ResolveLanguage(), middleware.RequireFeedbackAdminToken(r.feedbackAdminToken))
+	{
+		feedbackAdminGroup.GET("/feedback", r.feedbackHandler.ListForAdmin)
+	}
+
 	authGroup := router.Group("/")
 	authGroup.Use(middleware.ResolveLanguage(), r.auth.RequireAuth(), r.auth.RequireUser())
 	{
 		authGroup.POST("/auth/session", r.authHandler.CreateSession)
 		authGroup.GET("/me", r.authHandler.GetMe)
+		authGroup.GET("/me/feedback", r.feedbackHandler.ListByUser)
 		authGroup.DELETE("/me", r.authHandler.DeleteAccount)
 
 		authGroup.GET("/owners", r.ownerHandler.List)
@@ -71,6 +84,11 @@ func (r *Router) Setup() *gin.Engine {
 		authGroup.GET("/cards/:id", r.cardHandler.Get)
 		authGroup.PATCH("/cards/:id", r.cardHandler.Update)
 		authGroup.DELETE("/cards/:id", r.cardHandler.Delete)
+
+		authGroup.POST("/feedback", r.feedbackHandler.Create)
+		authGroup.GET("/feedback/:id", r.feedbackHandler.Get)
+		authGroup.PATCH("/feedback/:id", r.feedbackHandler.Update)
+		authGroup.DELETE("/feedback/:id", r.feedbackHandler.Delete)
 	}
 
 	return router
