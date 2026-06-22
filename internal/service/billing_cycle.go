@@ -111,13 +111,10 @@ func DaysOverdue(ref time.Time, paymentDueDay int, loc *time.Location) int {
 	return daysBetween(dueThisMonth, refDate)
 }
 
-func ComputeOptimalPurchaseDay(billingCycleDay int, salaryDay *int) int {
+func ComputeOptimalPurchaseDay(billingCycleDay int) int {
 	optimal := billingCycleDay + 1
 	if optimal > 31 {
 		optimal = 1
-	}
-	if salaryDay != nil && *salaryDay > 0 && *salaryDay > optimal {
-		optimal = *salaryDay
 	}
 	return optimal
 }
@@ -203,7 +200,6 @@ func BuildCardStatusInfo(
 	obligationCycle domain.BillingCycle,
 	paymentDueDate time.Time,
 	billingCycleDay int,
-	salaryDay *int,
 	paid bool,
 	loc *time.Location,
 ) domain.CardStatusInfo {
@@ -221,7 +217,7 @@ func BuildCardStatusInfo(
 		}
 	}
 
-	optimalPurchaseDay := ComputeOptimalPurchaseDay(billingCycleDay, salaryDay)
+	optimalPurchaseDay := ComputeOptimalPurchaseDay(billingCycleDay)
 	isOptimal := IsOptimalPurchaseDayInMonth(ref, optimalPurchaseDay, defaultOptimalWindowDays, loc)
 
 	return domain.CardStatusInfo{

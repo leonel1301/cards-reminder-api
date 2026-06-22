@@ -1,4 +1,4 @@
-package service
+package service_test
 
 import (
 	"testing"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leonelortega/cards-reminder-api/internal/domain"
+	"github.com/leonelortega/cards-reminder-api/internal/service"
 )
 
 func TestRecommendBestForPurchase_salary30_prefersLongestFinancing(t *testing.T) {
@@ -13,13 +14,13 @@ func TestRecommendBestForPurchase_salary30_prefersLongestFinancing(t *testing.T)
 	ref := time.Date(2026, 6, 18, 12, 0, 0, 0, loc)
 	salaryDay := 30
 
-	candidates := []purchaseCandidate{
+	candidates := []service.PurchaseCandidate{
 		buildTestPurchaseCandidate("CMR", 9, 5, salaryDay, ref, loc, true),
 		buildTestPurchaseCandidate("BCP", 25, 23, salaryDay, ref, loc, true),
 		buildTestPurchaseCandidate("IO", 25, 12, salaryDay, ref, loc, true),
 	}
 
-	got := RecommendBestForPurchase(candidates, ref, loc, "es")
+	got := service.RecommendBestForPurchase(candidates, ref, loc, "es")
 	if got == nil {
 		t.Fatal("expected recommendation")
 	}
@@ -42,7 +43,7 @@ func TestRecommendBestForPurchase_salary15_penalizesPaymentBeforeSalary(t *testi
 	ref := time.Date(2026, 6, 18, 12, 0, 0, 0, loc)
 	salaryDay := 15
 
-	candidates := []purchaseCandidate{
+	candidates := []service.PurchaseCandidate{
 		buildTestPurchaseCandidate("CMR", 9, 5, salaryDay, ref, loc, true),
 		buildTestPurchaseCandidate("BCP", 25, 23, salaryDay, ref, loc, true),
 		buildTestPurchaseCandidate("IO", 25, 12, salaryDay, ref, loc, true),
@@ -58,7 +59,7 @@ func TestRecommendBestForPurchase_salary15_penalizesPaymentBeforeSalary(t *testi
 		t.Fatal("expected CMR to align with salary day 15")
 	}
 
-	got := RecommendBestForPurchase(candidates, ref, loc, "es")
+	got := service.RecommendBestForPurchase(candidates, ref, loc, "es")
 	if got == nil {
 		t.Fatal("expected recommendation")
 	}
@@ -70,9 +71,9 @@ func TestRecommendBestForPurchase_salary15_penalizesPaymentBeforeSalary(t *testi
 func TestNextSalaryDate(t *testing.T) {
 	loc := time.UTC
 
-	assertDate(t, NextSalaryDate(time.Date(2026, 6, 18, 0, 0, 0, 0, loc), 30, loc), 2026, 6, 30)
-	assertDate(t, NextSalaryDate(time.Date(2026, 6, 18, 0, 0, 0, 0, loc), 15, loc), 2026, 7, 15)
-	assertDate(t, NextSalaryDate(time.Date(2026, 6, 18, 0, 0, 0, 0, loc), 10, loc), 2026, 7, 10)
+	assertDate(t, service.NextSalaryDate(time.Date(2026, 6, 18, 0, 0, 0, 0, loc), 30, loc), 2026, 6, 30)
+	assertDate(t, service.NextSalaryDate(time.Date(2026, 6, 18, 0, 0, 0, 0, loc), 15, loc), 2026, 7, 15)
+	assertDate(t, service.NextSalaryDate(time.Date(2026, 6, 18, 0, 0, 0, 0, loc), 10, loc), 2026, 7, 10)
 }
 
 func TestBuildBestForPurchaseWhy_pendingDebtMentioned(t *testing.T) {
@@ -80,7 +81,7 @@ func TestBuildBestForPurchaseWhy_pendingDebtMentioned(t *testing.T) {
 	ref := time.Date(2026, 6, 18, 12, 0, 0, 0, loc)
 	candidate := buildTestPurchaseCandidate("CMR", 9, 5, 30, ref, loc, false)
 
-	why := buildBestForPurchaseWhy(candidate, truncateToDateInLoc(ref, loc), loc, "es")
+	why := service.BuildBestForPurchaseWhy(candidate, service.TruncateToDateInLoc(ref, loc), loc, "es")
 	if why == "" {
 		t.Fatal("expected why message")
 	}
@@ -95,7 +96,7 @@ func buildTestPurchaseCandidate(
 	ref time.Time,
 	loc *time.Location,
 	paid bool,
-) purchaseCandidate {
+) service.PurchaseCandidate {
 	card := domain.Card{
 		ID:              uuid.New(),
 		Name:            name,
@@ -107,32 +108,10 @@ func buildTestPurchaseCandidate(
 		IsPaidThisCycle: paid,
 	}
 	if !paid {
-		prevCycle := PreviousBillingCycle(ComputeBillingCycle(ref, closingDay, paymentDay, loc), closingDay, loc)
-		status.PaymentDueDate = PaymentDueForCycleEnd(prevCycle.End, closingDay, paymentDay, loc)
+		prevCycle := service.PreviousBillingCycle(service.ComputeBillingCycle(ref, closingDay, paymentDay, loc), closingDay, loc)
+		status.PaymentDueDate = service.PaymentDueForCycleEnd(prevCycle.End, closingDay, paymentDay, loc)
 	}
 
 	salary := salaryDay
-	return buildPurchaseCandidate(card, status, ref, &salary, loc)
-}
-
-func containsAll(text string, parts ...string) bool {
-	for _, part := range parts {
-		if !contains(text, part) {
-			return false
-		}
-	}
-	return true
-}
-
-func contains(text, part string) bool {
-	return len(text) >= len(part) && (text == part || len(part) == 0 || indexOf(text, part) >= 0)
-}
-
-func indexOf(text, part string) int {
-	for i := 0; i+len(part) <= len(text); i++ {
-		if text[i:i+len(part)] == part {
-			return i
-		}
-	}
-	return -1
+	return service.BuildPurchaseCandidate(card, status, ref, &salary, loc)
 }

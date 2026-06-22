@@ -1,4 +1,4 @@
-package i18n
+package i18n_test
 
 import (
 	"strings"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/leonelortega/cards-reminder-api/internal/domain"
+	ni18n "github.com/leonelortega/cards-reminder-api/internal/notification/i18n"
 )
 
 func TestBuildReminderNotification_urgentDueTodayEnglish(t *testing.T) {
@@ -15,7 +16,7 @@ func TestBuildReminderNotification_urgentDueTodayEnglish(t *testing.T) {
 		LastFourDigits: "4532",
 	}
 
-	notification := BuildReminderNotification(ReminderKindUrgent, []CardReminder{
+	notification := ni18n.BuildReminderNotification(ni18n.ReminderKindUrgent, []ni18n.CardReminder{
 		{
 			Card:   card,
 			Status: domain.CardStatusInfo{DaysUntilPayment: 0},
@@ -34,7 +35,7 @@ func TestBuildReminderNotification_urgentDueTodaySpanish(t *testing.T) {
 		LastFourDigits: "4532",
 	}
 
-	notification := BuildReminderNotification(ReminderKindUrgent, []CardReminder{
+	notification := ni18n.BuildReminderNotification(ni18n.ReminderKindUrgent, []ni18n.CardReminder{
 		{
 			Card:   card,
 			Status: domain.CardStatusInfo{DaysUntilPayment: 0},
@@ -53,7 +54,7 @@ func TestBuildReminderNotification_urgentSpanish(t *testing.T) {
 		LastFourDigits: "4532",
 	}
 
-	notification := BuildReminderNotification(ReminderKindUrgent, []CardReminder{
+	notification := ni18n.BuildReminderNotification(ni18n.ReminderKindUrgent, []ni18n.CardReminder{
 		{
 			Card: card,
 			Status: domain.CardStatusInfo{
@@ -77,7 +78,7 @@ func TestBuildReminderNotification_dueSoonEnglish(t *testing.T) {
 		LastFourDigits: "9911",
 	}
 
-	notification := BuildReminderNotification(ReminderKindDueSoon, []CardReminder{
+	notification := ni18n.BuildReminderNotification(ni18n.ReminderKindDueSoon, []ni18n.CardReminder{
 		{
 			Card: card,
 			Status: domain.CardStatusInfo{
@@ -105,7 +106,7 @@ func TestBuildReminderNotification_includesOwnerName(t *testing.T) {
 		IsSelf: false,
 	}
 
-	notification := BuildReminderNotification(ReminderKindUrgent, []CardReminder{
+	notification := ni18n.BuildReminderNotification(ni18n.ReminderKindUrgent, []ni18n.CardReminder{
 		{
 			Card:   card,
 			Status: domain.CardStatusInfo{DaysUntilPayment: 1},
@@ -135,7 +136,7 @@ func TestBuildReminderNotification_overdueIncludesOwner(t *testing.T) {
 		IsSelf: false,
 	}
 
-	notification := BuildReminderNotification(ReminderKindOverdue, []CardReminder{
+	notification := ni18n.BuildReminderNotification(ni18n.ReminderKindOverdue, []ni18n.CardReminder{
 		{
 			Card:   card,
 			Status: domain.CardStatusInfo{DaysOverdue: 5},
@@ -165,7 +166,7 @@ func TestBuildReminderNotification_selfOwnerOmitsOwnerName(t *testing.T) {
 		IsSelf: true,
 	}
 
-	notification := BuildReminderNotification(ReminderKindDueSoon, []CardReminder{
+	notification := ni18n.BuildReminderNotification(ni18n.ReminderKindDueSoon, []ni18n.CardReminder{
 		{
 			Card:   card,
 			Status: domain.CardStatusInfo{DaysUntilPayment: 4},

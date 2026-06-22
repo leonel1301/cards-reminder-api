@@ -1,6 +1,10 @@
-package i18n
+package i18n_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/leonelortega/cards-reminder-api/internal/i18n"
+)
 
 func TestParseAcceptLanguage(t *testing.T) {
 	tests := []struct {
@@ -18,7 +22,7 @@ func TestParseAcceptLanguage(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if got := ParseAcceptLanguage(tt.header); got != tt.want {
+		if got := i18n.ParseAcceptLanguage(tt.header); got != tt.want {
 			t.Errorf("ParseAcceptLanguage(%q) = %q, want %q", tt.header, got, tt.want)
 		}
 	}
@@ -37,7 +41,7 @@ func TestNormalizeLanguage(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if got := NormalizeLanguage(tt.input); got != tt.want {
+		if got := i18n.NormalizeLanguage(tt.input); got != tt.want {
 			t.Errorf("NormalizeLanguage(%q) = %q, want %q", tt.input, got, tt.want)
 		}
 	}

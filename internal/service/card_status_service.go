@@ -57,8 +57,7 @@ func (s *CardStatusService) GetOptimalPurchaseDays(ctx context.Context, userID, 
 	loc := ResolveLocation(timezone)
 	now := s.now()
 	cycle := ComputeBillingCycle(now, card.BillingCycleDay, card.PaymentDueDay, loc)
-	salaryDay := s.ownerSalaryDay(ctx, card.OwnerID, card.UserID)
-	optimalDay := ComputeOptimalPurchaseDay(card.BillingCycleDay, salaryDay)
+	optimalDay := ComputeOptimalPurchaseDay(card.BillingCycleDay)
 	optimalDays := OptimalPurchaseDaysInMonth(now, optimalDay, defaultOptimalWindowDays, loc)
 
 	return &domain.OptimalPurchaseDaysResponse{
@@ -222,8 +221,7 @@ func (s *CardStatusService) buildStatusForCard(ctx context.Context, card domain.
 		return domain.CardStatusInfo{}, nil, err
 	}
 
-	salaryDay := s.ownerSalaryDay(ctx, card.OwnerID, card.UserID)
-	statusInfo := BuildCardStatusInfo(ref, obligationCycle, paymentDue, card.BillingCycleDay, salaryDay, paid, loc)
+	statusInfo := BuildCardStatusInfo(ref, obligationCycle, paymentDue, card.BillingCycleDay, paid, loc)
 	optimalDays := OptimalPurchaseDaysInMonth(ref, statusInfo.OptimalPurchaseDay, defaultOptimalWindowDays, loc)
 	return statusInfo, optimalDays, nil
 }
