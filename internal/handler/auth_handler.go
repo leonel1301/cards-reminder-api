@@ -12,11 +12,15 @@ import (
 )
 
 type AuthHandler struct {
-	userService *service.UserService
+	userService  *service.UserService
+	termsVersion string
 }
 
-func NewAuthHandler(userService *service.UserService) *AuthHandler {
-	return &AuthHandler{userService: userService}
+func NewAuthHandler(userService *service.UserService, termsVersion string) *AuthHandler {
+	return &AuthHandler{
+		userService:  userService,
+		termsVersion: termsVersion,
+	}
 }
 
 func (h *AuthHandler) CreateSession(c *gin.Context) {
@@ -56,6 +60,26 @@ func (h *AuthHandler) DeleteAccount(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+func (h *AuthHandler) AcceptTerms(c *gin.Context) {
+	user, ok := middleware.UserFromContext(c)
+	if !ok {
+		respondUnauthenticated(c)
+		return
+	}
+
+	updated, err := h.userService.AcceptTerms(c.Request.Context(), user.ID, h.termsVersion)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			respondError(c, http.StatusNotFound, i18n.ErrUserNotFound)
+			return
+		}
+		respondError(c, http.StatusInternalServerError, i18n.ErrFailedToAcceptTerms)
+		return
+	}
+
+	c.JSON(http.StatusOK, updated)
 }
 
 func (h *AuthHandler) Health(c *gin.Context) {

@@ -24,6 +24,7 @@ const (
 	ErrFailedToSendNotification         ErrorKey = "failed_to_send_notification"
 	ErrUserNotFound                     ErrorKey = "user_not_found"
 	ErrFailedToDeleteAccount            ErrorKey = "failed_to_delete_account"
+	ErrFailedToAcceptTerms              ErrorKey = "failed_to_accept_terms"
 	ErrInvalidFeedbackID                ErrorKey = "invalid_feedback_id"
 	ErrFeedbackNotFound                 ErrorKey = "feedback_not_found"
 	ErrFailedToListFeedback             ErrorKey = "failed_to_list_feedback"
@@ -109,6 +110,10 @@ func Error(lang string, key ErrorKey) string {
 		ErrFailedToDeleteAccount: {
 			"en": "failed to delete account",
 			"es": "no se pudo eliminar la cuenta",
+		},
+		ErrFailedToAcceptTerms: {
+			"en": "failed to accept terms",
+			"es": "no se pudo registrar la aceptación de términos",
 		},
 		ErrInvalidFeedbackID: {
 			"en": "invalid feedback id",

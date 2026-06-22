@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"firebase.google.com/go/v4/auth"
+	"github.com/google/uuid"
 	"github.com/leonelortega/cards-reminder-api/internal/domain"
 	"github.com/leonelortega/cards-reminder-api/internal/repository"
 )
@@ -50,4 +51,8 @@ func (s *UserService) DeleteAccount(ctx context.Context, user *domain.User) erro
 	}
 
 	return nil
+}
+
+func (s *UserService) AcceptTerms(ctx context.Context, userID uuid.UUID, termsVersion string) (*domain.User, error) {
+	return s.userRepo.AcceptTerms(ctx, userID, termsVersion)
 }

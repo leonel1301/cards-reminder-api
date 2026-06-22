@@ -47,7 +47,7 @@ func main() {
 	paymentRepo := repository.NewPaymentRepository(pool)
 	cardStatusService := service.NewCardStatusService(cardRepo, paymentRepo, ownerRepo)
 	authMiddleware := middleware.NewAuthMiddleware(firebaseApp.Auth, userService)
-	authHandler := handler.NewAuthHandler(userService)
+	authHandler := handler.NewAuthHandler(userService, cfg.TermsVersion)
 	cardHandler := handler.NewCardHandler(cardService)
 	deviceTokenRepo := repository.NewDeviceTokenRepository(pool)
 	deviceTokenService := service.NewDeviceTokenService(deviceTokenRepo)

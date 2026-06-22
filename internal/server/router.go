@@ -58,6 +58,7 @@ func (r *Router) Setup() *gin.Engine {
 	{
 		authGroup.POST("/auth/session", r.authHandler.CreateSession)
 		authGroup.GET("/me", r.authHandler.GetMe)
+		authGroup.PATCH("/me/accept-terms", r.authHandler.AcceptTerms)
 		authGroup.GET("/me/feedback", r.feedbackHandler.ListByUser)
 		authGroup.DELETE("/me", r.authHandler.DeleteAccount)
 

@@ -14,6 +14,7 @@ type Config struct {
 	DatabaseURL             string
 	FirebaseCredentialsPath string
 	FeedbackAdminToken      string
+	TermsVersion            string
 }
 
 type JobConfig struct {
@@ -31,6 +32,7 @@ func Load() (*Config, error) {
 		DatabaseURL:             os.Getenv("DATABASE_URL"),
 		FirebaseCredentialsPath: os.Getenv("FIREBASE_CREDENTIALS_PATH"),
 		FeedbackAdminToken:      os.Getenv("FEEDBACK_ADMIN_TOKEN"),
+		TermsVersion:            envOrDefault("TERMS_VERSION", "1.0"),
 	}
 
 	if cfg.DatabaseURL == "" {
