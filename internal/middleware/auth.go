@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/leonelortega/cards-reminder-api/internal/domain"
 	"github.com/leonelortega/cards-reminder-api/internal/i18n"
+	"github.com/leonelortega/cards-reminder-api/internal/repository"
 	"github.com/leonelortega/cards-reminder-api/internal/service"
 )
 
@@ -78,6 +80,36 @@ func (m *AuthMiddleware) RequireUser() gin.HandlerFunc {
 			displayName.(*string),
 		)
 		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": i18n.Error(LanguageFromContext(c), i18n.ErrFailedToResolveUser),
+			})
+			return
+		}
+
+		c.Set(ContextKeyUser, user)
+		c.Next()
+	}
+}
+
+func (m *AuthMiddleware) RequireExistingUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		firebaseUID, ok := c.Get(ContextKeyFirebaseUID)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": i18n.Error(LanguageFromContext(c), i18n.ErrUnauthenticated),
+			})
+			return
+		}
+
+		user, err := m.userService.GetByFirebaseUID(c.Request.Context(), firebaseUID.(string))
+		if err != nil {
+			if errors.Is(err, repository.ErrNotFound) {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error": i18n.Error(LanguageFromContext(c), i18n.ErrUserNotFound),
+				})
+				return
+			}
+
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": i18n.Error(LanguageFromContext(c), i18n.ErrFailedToResolveUser),
 			})

@@ -2,9 +2,11 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/leonelortega/cards-reminder-api/internal/domain"
 )
@@ -51,7 +53,15 @@ func (r *UserRepository) GetByFirebaseUID(ctx context.Context, firebaseUID strin
 		WHERE firebase_uid = $1
 	`
 
-	return scanUser(r.pool.QueryRow(ctx, query, firebaseUID))
+	user, err := scanUser(r.pool.QueryRow(ctx, query, firebaseUID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("get user by firebase uid: %w", err)
+	}
+
+	return user, nil
 }
 
 func (r *UserRepository) Upsert(ctx context.Context, firebaseUID string, email, displayName *string) (*domain.User, error) {
