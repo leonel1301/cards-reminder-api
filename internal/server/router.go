@@ -58,12 +58,12 @@ func (r *Router) Setup() *gin.Engine {
 	sessionGroup.Use(middleware.ResolveLanguage(), r.auth.RequireAuth(), r.auth.RequireUser())
 	{
 		sessionGroup.POST("/auth/session", r.authHandler.CreateSession)
+		sessionGroup.GET("/me", r.authHandler.GetMe)
 	}
 
 	authGroup := router.Group("/")
 	authGroup.Use(middleware.ResolveLanguage(), r.auth.RequireAuth(), r.auth.RequireExistingUser())
 	{
-		authGroup.GET("/me", r.authHandler.GetMe)
 		authGroup.PATCH("/me/accept-terms", r.authHandler.AcceptTerms)
 		authGroup.GET("/me/feedback", r.feedbackHandler.ListByUser)
 		authGroup.DELETE("/me", r.authHandler.DeleteAccount)
