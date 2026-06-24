@@ -75,7 +75,6 @@ func (r *Router) Setup() *gin.Engine {
 		authGroup.DELETE("/owners/:id", r.ownerHandler.Delete)
 
 		authGroup.PUT("/devices", r.deviceHandler.Register)
-		authGroup.DELETE("/devices", r.deviceHandler.Unregister)
 
 		authGroup.POST("/notifications/test", r.notificationHandler.SendTest)
 
@@ -96,6 +95,12 @@ func (r *Router) Setup() *gin.Engine {
 		authGroup.GET("/feedback/:id", r.feedbackHandler.Get)
 		authGroup.PATCH("/feedback/:id", r.feedbackHandler.Update)
 		authGroup.DELETE("/feedback/:id", r.feedbackHandler.Delete)
+	}
+
+	unregisterDeviceGroup := router.Group("/")
+	unregisterDeviceGroup.Use(middleware.ResolveLanguage(), r.auth.RequireAuth(), r.auth.RequireRegisteredUser())
+	{
+		unregisterDeviceGroup.DELETE("/devices", r.deviceHandler.Unregister)
 	}
 
 	return router

@@ -61,64 +61,75 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 }
 
 func (m *AuthMiddleware) RequireUser() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		firebaseUID, ok := c.Get(ContextKeyFirebaseUID)
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": i18n.Error(LanguageFromContext(c), i18n.ErrUnauthenticated),
-			})
-			return
-		}
-
-		email, _ := c.Get(ContextKeyEmail)
-		displayName, _ := c.Get(ContextKeyDisplayName)
-
-		user, err := m.userService.GetOrCreate(
-			c.Request.Context(),
-			firebaseUID.(string),
-			email.(*string),
-			displayName.(*string),
-		)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"error": i18n.Error(LanguageFromContext(c), i18n.ErrFailedToResolveUser),
-			})
-			return
-		}
-
-		c.Set(ContextKeyUser, user)
-		c.Next()
-	}
+	return m.requireUser
 }
 
+// RequireExistingUser resolves the user the same way as RequireUser (get-or-create).
 func (m *AuthMiddleware) RequireExistingUser() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		firebaseUID, ok := c.Get(ContextKeyFirebaseUID)
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": i18n.Error(LanguageFromContext(c), i18n.ErrUnauthenticated),
-			})
-			return
-		}
+	return m.requireUser
+}
 
-		user, err := m.userService.GetByFirebaseUID(c.Request.Context(), firebaseUID.(string))
-		if err != nil {
-			if errors.Is(err, repository.ErrNotFound) {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error": i18n.Error(LanguageFromContext(c), i18n.ErrUserNotFound),
-				})
-				return
-			}
+// RequireRegisteredUser loads a user already stored in the database by firebase_uid.
+// Does not create a new user; returns 401 when the account was deleted or never registered.
+func (m *AuthMiddleware) RequireRegisteredUser() gin.HandlerFunc {
+	return m.requireRegisteredUser
+}
 
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"error": i18n.Error(LanguageFromContext(c), i18n.ErrFailedToResolveUser),
-			})
-			return
-		}
-
-		c.Set(ContextKeyUser, user)
-		c.Next()
+func (m *AuthMiddleware) requireUser(c *gin.Context) {
+	firebaseUID, ok := c.Get(ContextKeyFirebaseUID)
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": i18n.Error(LanguageFromContext(c), i18n.ErrUnauthenticated),
+		})
+		return
 	}
+
+	email, _ := c.Get(ContextKeyEmail)
+	displayName, _ := c.Get(ContextKeyDisplayName)
+
+	user, err := m.userService.GetOrCreate(
+		c.Request.Context(),
+		firebaseUID.(string),
+		email.(*string),
+		displayName.(*string),
+	)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": i18n.Error(LanguageFromContext(c), i18n.ErrFailedToResolveUser),
+		})
+		return
+	}
+
+	c.Set(ContextKeyUser, user)
+	c.Next()
+}
+
+func (m *AuthMiddleware) requireRegisteredUser(c *gin.Context) {
+	firebaseUID, ok := c.Get(ContextKeyFirebaseUID)
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": i18n.Error(LanguageFromContext(c), i18n.ErrUnauthenticated),
+		})
+		return
+	}
+
+	user, err := m.userService.GetByFirebaseUID(c.Request.Context(), firebaseUID.(string))
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": i18n.Error(LanguageFromContext(c), i18n.ErrUserNotFound),
+			})
+			return
+		}
+
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": i18n.Error(LanguageFromContext(c), i18n.ErrFailedToResolveUser),
+		})
+		return
+	}
+
+	c.Set(ContextKeyUser, user)
+	c.Next()
 }
 
 func UserFromContext(c *gin.Context) (*domain.User, bool) {
