@@ -32,6 +32,10 @@ const (
 	ErrContractFileRequired             ErrorKey = "contract_file_required"
 	ErrContractAnalyzeFailed            ErrorKey = "contract_analyze_failed"
 	ErrContractAIUnavailable            ErrorKey = "contract_ai_unavailable"
+	ErrFailedToGetPaymentCount          ErrorKey = "failed_to_get_payment_count"
+	ErrFailedToListLessons              ErrorKey = "failed_to_list_lessons"
+	ErrFailedToMarkLesson               ErrorKey = "failed_to_mark_lesson"
+	ErrFailedToUnmarkLesson             ErrorKey = "failed_to_unmark_lesson"
 )
 
 func Error(lang string, key ErrorKey) string {
@@ -146,6 +150,22 @@ func Error(lang string, key ErrorKey) string {
 			"en": "contract analysis is temporarily unavailable",
 			"es": "el análisis de contratos no está disponible por ahora",
 		},
+		ErrFailedToGetPaymentCount: {
+			"en": "failed to get payment count",
+			"es": "no se pudo obtener el conteo de pagos",
+		},
+		ErrFailedToListLessons: {
+			"en": "failed to list completed lessons",
+			"es": "no se pudieron listar las lecciones completadas",
+		},
+		ErrFailedToMarkLesson: {
+			"en": "failed to mark lesson as completed",
+			"es": "no se pudo marcar la lección como completada",
+		},
+		ErrFailedToUnmarkLesson: {
+			"en": "failed to unmark lesson",
+			"es": "no se pudo desmarcar la lección",
+		},
 	}
 
 	if byLang, ok := messages[key]; ok {
@@ -189,6 +209,10 @@ func validationMessage(lang, message string) string {
 		"must be a PDF or image": {
 			"en": "must be a PDF or image",
 			"es": "debe ser un PDF o una imagen",
+		},
+		"has an invalid format": {
+			"en": "has an invalid format",
+			"es": "tiene un formato inválido",
 		},
 		"cannot delete self owner": {
 			"en": "cannot delete self owner",

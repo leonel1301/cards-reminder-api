@@ -184,6 +184,17 @@ func (s *CardStatusService) GetCurrentCycle(ctx context.Context, userID, cardID 
 	}, nil
 }
 
+func (s *CardStatusService) GetPaymentCount(ctx context.Context, userID uuid.UUID) (*domain.PaymentCountResponse, error) {
+	count, err := s.paymentRepo.CountByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &domain.PaymentCountResponse{
+		PaymentCount: count,
+	}, nil
+}
+
 func (s *CardStatusService) ListPayments(ctx context.Context, userID, cardID uuid.UUID) (*domain.PaymentsResponse, error) {
 	card, err := s.cardRepo.GetByIDAndUserID(ctx, cardID, userID)
 	if err != nil {

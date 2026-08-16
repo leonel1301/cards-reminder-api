@@ -61,6 +61,9 @@ func main() {
 	feedbackHandler := handler.NewFeedbackHandler(feedbackService)
 	contractExtractService := service.NewContractExtractService(cfg.OpenAIAPIKey, cfg.OpenAIModel)
 	contractHandler := handler.NewContractHandler(contractExtractService)
+	lessonProgressRepo := repository.NewLessonProgressRepository(pool)
+	lessonProgressService := service.NewLessonProgressService(lessonProgressRepo)
+	lessonProgressHandler := handler.NewLessonProgressHandler(lessonProgressService)
 
 	router := server.NewRouter(
 		authHandler,
@@ -71,6 +74,7 @@ func main() {
 		notificationHandler,
 		feedbackHandler,
 		contractHandler,
+		lessonProgressHandler,
 		authMiddleware,
 		cfg.FeedbackAdminToken,
 	).Setup()

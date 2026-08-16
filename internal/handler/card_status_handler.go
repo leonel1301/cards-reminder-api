@@ -105,6 +105,22 @@ func (h *CardStatusHandler) GetDashboard(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func (h *CardStatusHandler) GetPaymentCount(c *gin.Context) {
+	user, ok := middleware.UserFromContext(c)
+	if !ok {
+		respondUnauthenticated(c)
+		return
+	}
+
+	response, err := h.cardStatusService.GetPaymentCount(c.Request.Context(), user.ID)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, i18n.ErrFailedToGetPaymentCount)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 func (h *CardStatusHandler) GetCurrentCycle(c *gin.Context) {
 	user, ok := middleware.UserFromContext(c)
 	if !ok {

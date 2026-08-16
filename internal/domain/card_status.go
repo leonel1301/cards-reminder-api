@@ -97,3 +97,7 @@ type PaymentsResponse struct {
 	Card     Card      `json:"card"`
 	Payments []Payment `json:"payments"`
 }
+
+type PaymentCountResponse struct {
+	PaymentCount int `json:"payment_count"`
+}

@@ -7,16 +7,17 @@ import (
 )
 
 type Router struct {
-	authHandler         *handler.AuthHandler
-	cardHandler         *handler.CardHandler
-	cardStatusHandler   *handler.CardStatusHandler
-	ownerHandler        *handler.OwnerHandler
-	deviceHandler       *handler.DeviceHandler
-	notificationHandler *handler.NotificationHandler
-	feedbackHandler     *handler.FeedbackHandler
-	contractHandler     *handler.ContractHandler
-	auth                *middleware.AuthMiddleware
-	feedbackAdminToken  string
+	authHandler           *handler.AuthHandler
+	cardHandler           *handler.CardHandler
+	cardStatusHandler     *handler.CardStatusHandler
+	ownerHandler          *handler.OwnerHandler
+	deviceHandler         *handler.DeviceHandler
+	notificationHandler   *handler.NotificationHandler
+	feedbackHandler       *handler.FeedbackHandler
+	contractHandler       *handler.ContractHandler
+	lessonProgressHandler *handler.LessonProgressHandler
+	auth                  *middleware.AuthMiddleware
+	feedbackAdminToken    string
 }
 
 func NewRouter(
@@ -28,20 +29,22 @@ func NewRouter(
 	notificationHandler *handler.NotificationHandler,
 	feedbackHandler *handler.FeedbackHandler,
 	contractHandler *handler.ContractHandler,
+	lessonProgressHandler *handler.LessonProgressHandler,
 	auth *middleware.AuthMiddleware,
 	feedbackAdminToken string,
 ) *Router {
 	return &Router{
-		authHandler:         authHandler,
-		cardHandler:         cardHandler,
-		cardStatusHandler:   cardStatusHandler,
-		ownerHandler:        ownerHandler,
-		deviceHandler:       deviceHandler,
-		notificationHandler: notificationHandler,
-		feedbackHandler:     feedbackHandler,
-		contractHandler:     contractHandler,
-		auth:                auth,
-		feedbackAdminToken:  feedbackAdminToken,
+		authHandler:           authHandler,
+		cardHandler:           cardHandler,
+		cardStatusHandler:     cardStatusHandler,
+		ownerHandler:          ownerHandler,
+		deviceHandler:         deviceHandler,
+		notificationHandler:   notificationHandler,
+		feedbackHandler:       feedbackHandler,
+		contractHandler:       contractHandler,
+		lessonProgressHandler: lessonProgressHandler,
+		auth:                  auth,
+		feedbackAdminToken:    feedbackAdminToken,
 	}
 }
 
@@ -69,6 +72,7 @@ func (r *Router) Setup() *gin.Engine {
 	{
 		authGroup.PATCH("/me/accept-terms", r.authHandler.AcceptTerms)
 		authGroup.GET("/me/feedback", r.feedbackHandler.ListByUser)
+		authGroup.GET("/me/payment-count", r.cardStatusHandler.GetPaymentCount)
 		authGroup.DELETE("/me", r.authHandler.DeleteAccount)
 
 		authGroup.GET("/owners", r.ownerHandler.List)
@@ -100,6 +104,10 @@ func (r *Router) Setup() *gin.Engine {
 		authGroup.DELETE("/feedback/:id", r.feedbackHandler.Delete)
 
 		authGroup.POST("/contracts/analyze", r.contractHandler.Analyze)
+
+		authGroup.GET("/me/lessons", r.lessonProgressHandler.List)
+		authGroup.PUT("/me/lessons/:lessonId", r.lessonProgressHandler.Mark)
+		authGroup.DELETE("/me/lessons/:lessonId", r.lessonProgressHandler.Unmark)
 	}
 
 	unregisterDeviceGroup := router.Group("/")

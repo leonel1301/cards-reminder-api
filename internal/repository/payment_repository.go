@@ -50,6 +50,23 @@ func (r *PaymentRepository) Create(ctx context.Context, cardID uuid.UUID, cycleE
 	return nil
 }
 
+func (r *PaymentRepository) CountByUserID(ctx context.Context, userID uuid.UUID) (int, error) {
+	const query = `
+		SELECT COUNT(*)::int
+		FROM card_payments cp
+		INNER JOIN cards c ON c.id = cp.card_id
+		WHERE c.user_id = $1
+	`
+
+	var count int
+	err := r.pool.QueryRow(ctx, query, userID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("count payments by user: %w", err)
+	}
+
+	return count, nil
+}
+
 func (r *PaymentRepository) ListByCardID(ctx context.Context, cardID uuid.UUID) ([]PaymentRecord, error) {
 	const query = `
 		SELECT id, card_id, cycle_end, paid_at, notes

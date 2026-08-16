@@ -28,6 +28,24 @@ func TestParseAcceptLanguage(t *testing.T) {
 	}
 }
 
+func TestFailedToGetPaymentCountMessages(t *testing.T) {
+	if got := i18n.Error("en", i18n.ErrFailedToGetPaymentCount); got != "failed to get payment count" {
+		t.Errorf("en = %q", got)
+	}
+	if got := i18n.Error("es", i18n.ErrFailedToGetPaymentCount); got != "no se pudo obtener el conteo de pagos" {
+		t.Errorf("es = %q", got)
+	}
+}
+
+func TestLessonProgressMessages(t *testing.T) {
+	if got := i18n.Error("en", i18n.ErrFailedToListLessons); got != "failed to list completed lessons" {
+		t.Errorf("list en = %q", got)
+	}
+	if got := i18n.Error("es", i18n.ErrFailedToMarkLesson); got != "no se pudo marcar la lección como completada" {
+		t.Errorf("mark es = %q", got)
+	}
+}
+
 func TestNormalizeLanguage(t *testing.T) {
 	tests := []struct {
 		input string
