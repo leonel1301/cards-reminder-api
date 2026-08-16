@@ -29,6 +29,9 @@ const (
 	ErrFeedbackNotFound                 ErrorKey = "feedback_not_found"
 	ErrFailedToListFeedback             ErrorKey = "failed_to_list_feedback"
 	ErrInvalidFeedbackAdminToken        ErrorKey = "invalid_feedback_admin_token"
+	ErrContractFileRequired             ErrorKey = "contract_file_required"
+	ErrContractAnalyzeFailed            ErrorKey = "contract_analyze_failed"
+	ErrContractAIUnavailable            ErrorKey = "contract_ai_unavailable"
 )
 
 func Error(lang string, key ErrorKey) string {
@@ -131,6 +134,18 @@ func Error(lang string, key ErrorKey) string {
 			"en": "invalid or missing feedback admin token",
 			"es": "token de administración de feedback inválido o ausente",
 		},
+		ErrContractFileRequired: {
+			"en": "a PDF or image file is required",
+			"es": "se requiere un archivo PDF o imagen",
+		},
+		ErrContractAnalyzeFailed: {
+			"en": "failed to analyze the contract",
+			"es": "no se pudo analizar el contrato",
+		},
+		ErrContractAIUnavailable: {
+			"en": "contract analysis is temporarily unavailable",
+			"es": "el análisis de contratos no está disponible por ahora",
+		},
 	}
 
 	if byLang, ok := messages[key]; ok {
@@ -166,6 +181,14 @@ func validationMessage(lang, message string) string {
 		"cannot be empty": {
 			"en": "cannot be empty",
 			"es": "no puede estar vacío",
+		},
+		"is too large": {
+			"en": "is too large (max 10 MB)",
+			"es": "es demasiado grande (máx. 10 MB)",
+		},
+		"must be a PDF or image": {
+			"en": "must be a PDF or image",
+			"es": "debe ser un PDF o una imagen",
 		},
 		"cannot delete self owner": {
 			"en": "cannot delete self owner",

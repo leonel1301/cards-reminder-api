@@ -7,13 +7,14 @@ import (
 )
 
 type Router struct {
-	authHandler       *handler.AuthHandler
-	cardHandler       *handler.CardHandler
-	cardStatusHandler *handler.CardStatusHandler
-	ownerHandler      *handler.OwnerHandler
-	deviceHandler     *handler.DeviceHandler
+	authHandler         *handler.AuthHandler
+	cardHandler         *handler.CardHandler
+	cardStatusHandler   *handler.CardStatusHandler
+	ownerHandler        *handler.OwnerHandler
+	deviceHandler       *handler.DeviceHandler
 	notificationHandler *handler.NotificationHandler
 	feedbackHandler     *handler.FeedbackHandler
+	contractHandler     *handler.ContractHandler
 	auth                *middleware.AuthMiddleware
 	feedbackAdminToken  string
 }
@@ -26,6 +27,7 @@ func NewRouter(
 	deviceHandler *handler.DeviceHandler,
 	notificationHandler *handler.NotificationHandler,
 	feedbackHandler *handler.FeedbackHandler,
+	contractHandler *handler.ContractHandler,
 	auth *middleware.AuthMiddleware,
 	feedbackAdminToken string,
 ) *Router {
@@ -37,6 +39,7 @@ func NewRouter(
 		deviceHandler:       deviceHandler,
 		notificationHandler: notificationHandler,
 		feedbackHandler:     feedbackHandler,
+		contractHandler:     contractHandler,
 		auth:                auth,
 		feedbackAdminToken:  feedbackAdminToken,
 	}
@@ -95,6 +98,8 @@ func (r *Router) Setup() *gin.Engine {
 		authGroup.GET("/feedback/:id", r.feedbackHandler.Get)
 		authGroup.PATCH("/feedback/:id", r.feedbackHandler.Update)
 		authGroup.DELETE("/feedback/:id", r.feedbackHandler.Delete)
+
+		authGroup.POST("/contracts/analyze", r.contractHandler.Analyze)
 	}
 
 	unregisterDeviceGroup := router.Group("/")

@@ -15,6 +15,8 @@ type Config struct {
 	FirebaseCredentialsPath string
 	FeedbackAdminToken      string
 	TermsVersion            string
+	OpenAIAPIKey            string
+	OpenAIModel             string
 }
 
 type JobConfig struct {
@@ -33,6 +35,8 @@ func Load() (*Config, error) {
 		FirebaseCredentialsPath: os.Getenv("FIREBASE_CREDENTIALS_PATH"),
 		FeedbackAdminToken:      os.Getenv("FEEDBACK_ADMIN_TOKEN"),
 		TermsVersion:            envOrDefault("TERMS_VERSION", "1.0"),
+		OpenAIAPIKey:            os.Getenv("OPENAI_API_KEY"),
+		OpenAIModel:             envOrDefault("OPENAI_MODEL", "gpt-4o"),
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -43,6 +47,9 @@ func Load() (*Config, error) {
 	}
 	if cfg.FeedbackAdminToken == "" {
 		return nil, fmt.Errorf("FEEDBACK_ADMIN_TOKEN is required")
+	}
+	if cfg.OpenAIAPIKey == "" {
+		return nil, fmt.Errorf("OPENAI_API_KEY is required")
 	}
 
 	return cfg, nil

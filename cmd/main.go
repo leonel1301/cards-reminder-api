@@ -59,6 +59,8 @@ func main() {
 	feedbackRepo := repository.NewFeedbackRepository(pool)
 	feedbackService := service.NewFeedbackService(feedbackRepo)
 	feedbackHandler := handler.NewFeedbackHandler(feedbackService)
+	contractExtractService := service.NewContractExtractService(cfg.OpenAIAPIKey, cfg.OpenAIModel)
+	contractHandler := handler.NewContractHandler(contractExtractService)
 
 	router := server.NewRouter(
 		authHandler,
@@ -68,6 +70,7 @@ func main() {
 		deviceHandler,
 		notificationHandler,
 		feedbackHandler,
+		contractHandler,
 		authMiddleware,
 		cfg.FeedbackAdminToken,
 	).Setup()
