@@ -46,6 +46,15 @@ func TestLessonProgressMessages(t *testing.T) {
 	}
 }
 
+func TestContractAnalyzeLimitMessages(t *testing.T) {
+	if got := i18n.Error("en", i18n.ErrContractAnalyzeLimitReached); got != "beta limit reached: you can analyze up to 5 contracts" {
+		t.Errorf("en = %q", got)
+	}
+	if got := i18n.Error("es", i18n.ErrContractAnalyzeLimitReached); got != "límite beta alcanzado: puedes analizar hasta 5 contratos" {
+		t.Errorf("es = %q", got)
+	}
+}
+
 func TestNormalizeLanguage(t *testing.T) {
 	tests := []struct {
 		input string

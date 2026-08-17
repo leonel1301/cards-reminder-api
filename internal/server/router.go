@@ -104,6 +104,7 @@ func (r *Router) Setup() *gin.Engine {
 		authGroup.DELETE("/feedback/:id", r.feedbackHandler.Delete)
 
 		authGroup.POST("/contracts/analyze", r.contractHandler.Analyze)
+		authGroup.GET("/me/contracts/usage", r.contractHandler.GetUsage)
 
 		authGroup.GET("/me/lessons", r.lessonProgressHandler.List)
 		authGroup.PUT("/me/lessons/:lessonId", r.lessonProgressHandler.Mark)

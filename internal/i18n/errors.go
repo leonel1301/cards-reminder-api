@@ -32,6 +32,8 @@ const (
 	ErrContractFileRequired             ErrorKey = "contract_file_required"
 	ErrContractAnalyzeFailed            ErrorKey = "contract_analyze_failed"
 	ErrContractAIUnavailable            ErrorKey = "contract_ai_unavailable"
+	ErrContractAnalyzeLimitReached      ErrorKey = "contract_analyze_limit_reached"
+	ErrFailedToGetContractUsage         ErrorKey = "failed_to_get_contract_usage"
 	ErrFailedToGetPaymentCount          ErrorKey = "failed_to_get_payment_count"
 	ErrFailedToListLessons              ErrorKey = "failed_to_list_lessons"
 	ErrFailedToMarkLesson               ErrorKey = "failed_to_mark_lesson"
@@ -149,6 +151,14 @@ func Error(lang string, key ErrorKey) string {
 		ErrContractAIUnavailable: {
 			"en": "contract analysis is temporarily unavailable",
 			"es": "el análisis de contratos no está disponible por ahora",
+		},
+		ErrContractAnalyzeLimitReached: {
+			"en": "beta limit reached: you can analyze up to 5 contracts",
+			"es": "límite beta alcanzado: puedes analizar hasta 5 contratos",
+		},
+		ErrFailedToGetContractUsage: {
+			"en": "failed to get contract analysis usage",
+			"es": "no se pudo obtener el uso de análisis de contratos",
 		},
 		ErrFailedToGetPaymentCount: {
 			"en": "failed to get payment count",
